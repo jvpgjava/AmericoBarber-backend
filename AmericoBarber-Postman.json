@@ -1,0 +1,362 @@
+{
+  "info": {
+    "name": "Américo Barber API",
+    "description": "API REST da barbearia. Base URL: {{baseUrl}}\n\n**Roles:** ROLE_ADMIN (se isBarber=true é barbeiro) e ROLE_CLIENT.\n\n1. **Login** ou **Register** (sem Bearer).\n2. Copie o `token` da resposta e em Collection → Authorization defina Bearer Token = esse valor (ou use a variável {{token}}).\n3. Teste os endpoints por grupo: Admin (ROLE_ADMIN), Barbeiro (ROLE_ADMIN + isBarber), Cliente (ROLE_CLIENT).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:6060" },
+    { "key": "token", "value": "" }
+  ],
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{token}}", "type": "string" }]
+  },
+  "item": [
+    {
+      "name": "Autenticação",
+      "description": "Endpoints públicos. Sem Bearer.",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"cliente@email.com\",\n  \"password\": \"123456\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/login",
+            "description": "Retorna token e dados do usuário. Guarde o token para usar em Authorization (Bearer) nos outros endpoints."
+          }
+        },
+        {
+          "name": "Cadastro (cliente)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"João Silva\",\n  \"email\": \"joao@email.com\",\n  \"cpf\": \"12345678900\",\n  \"phone\": \"11999998888\",\n  \"password\": \"123456\",\n  \"role\": \"ROLE_CLIENT\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/register",
+            "description": "Cadastro público. Sempre envie role: ROLE_CLIENT. Barbeiros são criados pelo admin em POST /api/admin/barbers."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "description": "Requer ROLE_ADMIN e Bearer.",
+      "item": [
+        {
+          "name": "Criar barbeiro",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Carlos Barbeiro\",\n  \"email\": \"carlos@americobarber.com\",\n  \"cpf\": \"33333333333\",\n  \"phone\": \"11999990003\",\n  \"password\": \"123456\"\n}"
+            },
+            "url": "{{baseUrl}}/api/admin/barbers",
+            "description": "Cria admin com isBarber=true. Sem role no body."
+          }
+        },
+        {
+          "name": "Listar barbeiros",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/admin/barbers"
+          }
+        },
+        {
+          "name": "Listar clientes",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/admin/clients"
+          }
+        },
+        {
+          "name": "Atualizar usuário",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Nome Atualizado\",\n  \"email\": \"novo@email.com\",\n  \"phone\": \"11988887777\",\n  \"password\": \"novaSenha123\",\n  \"active\": true,\n  \"assignedBarberId\": 1\n}"
+            },
+            "url": "{{baseUrl}}/api/admin/users/1",
+            "description": "Substitua :id pelo ID do usuário. Campos opcionais."
+          }
+        },
+        {
+          "name": "Criar serviço",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Corte masculino\",\n  \"price\": 45.00,\n  \"durationMinutes\": 30,\n  \"description\": \"Corte e barba\",\n  \"barberId\": 1\n}"
+            },
+            "url": "{{baseUrl}}/api/admin/services",
+            "description": "barberId = ID do usuário barbeiro (admin com isBarber=true)."
+          }
+        },
+        {
+          "name": "Atualizar serviço",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Corte masculino\",\n  \"price\": 50.00,\n  \"durationMinutes\": 40,\n  \"description\": \"Corte completo\",\n  \"active\": true,\n  \"barberId\": 1\n}"
+            },
+            "url": "{{baseUrl}}/api/admin/services/1",
+            "description": "Substitua o último 1 pelo ID do serviço."
+          }
+        },
+        {
+          "name": "Listar todos os serviços",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/admin/services"
+          }
+        },
+        {
+          "name": "Listar todos os agendamentos",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/admin/appointments"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Barbeiro",
+      "description": "Requer ROLE_ADMIN com isBarber=true. Cada barbeiro vê só seus dados.",
+      "item": [
+        {
+          "name": "Meu perfil",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/barbers/profile"
+          }
+        },
+        {
+          "name": "Meus agendamentos",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/barbers/appointments"
+          }
+        },
+        {
+          "name": "Meu histórico",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/barbers/history"
+          }
+        },
+        {
+          "name": "Meus clientes",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/barbers/clients"
+          }
+        },
+        {
+          "name": "Cancelar agendamento",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"observation\": \"Imprevisto\"\n}"
+            },
+            "url": "{{baseUrl}}/api/barbers/appointments/1",
+            "description": "Substitua 1 pelo ID do agendamento. Body opcional."
+          }
+        },
+        {
+          "name": "Propor reagendamento",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"proposedDate\": \"2025-03-15\",\n  \"proposedStartTime\": \"10:00\",\n  \"barberMessage\": \"Imprevisto, podemos nesse horário?\"\n}"
+            },
+            "url": "{{baseUrl}}/api/barbers/appointments/1/propose-reschedule",
+            "description": "Substitua 1 pelo ID do agendamento."
+          }
+        },
+        {
+          "name": "Obter disponibilidade",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/barbers/availability"
+          }
+        },
+        {
+          "name": "Definir disponibilidade",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  { \"dayOfWeek\": 1, \"startTime\": \"09:00\", \"endTime\": \"18:00\" },\n  { \"dayOfWeek\": 2, \"startTime\": \"09:00\", \"endTime\": \"18:00\" },\n  { \"dayOfWeek\": 6, \"startTime\": \"09:00\", \"endTime\": \"13:00\" }\n]"
+            },
+            "url": "{{baseUrl}}/api/barbers/availability",
+            "description": "dayOfWeek: 1=Segunda a 7=Domingo. Substitui toda a disponibilidade."
+          }
+        },
+        {
+          "name": "Dias de folga (listar)",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/barbers/date-off"
+          }
+        },
+        {
+          "name": "Definir dias de folga",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"datesOff\": [\"2025-12-25\", \"2025-01-01\"]\n}"
+            },
+            "url": "{{baseUrl}}/api/barbers/date-off"
+          }
+        },
+        {
+          "name": "Meus serviços",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/barbers/services"
+          }
+        },
+        {
+          "name": "Atualizar meu serviço",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Corte infantil\",\n  \"price\": 35.00,\n  \"durationMinutes\": 25,\n  \"description\": \"Até 12 anos\",\n  \"active\": true,\n  \"barberId\": 1\n}"
+            },
+            "url": "{{baseUrl}}/api/barbers/services/1",
+            "description": "Substitua o último 1 pelo ID do serviço (que pertence ao barbeiro)."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cliente",
+      "description": "Requer ROLE_CLIENT (ou ROLE_ADMIN). Usuário identificado pelo JWT.",
+      "item": [
+        {
+          "name": "Meu perfil",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/clients/profile"
+          }
+        },
+        {
+          "name": "Meus agendamentos",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/clients/appointments"
+          }
+        },
+        {
+          "name": "Histórico",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/clients/history"
+          }
+        },
+        {
+          "name": "Criar agendamento",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clientId\": 1,\n  \"barberId\": 2,\n  \"serviceId\": 1,\n  \"date\": \"2025-03-01\",\n  \"startTime\": \"14:00\"\n}"
+            },
+            "url": "{{baseUrl}}/api/clients/appointments",
+            "description": "clientId deve ser o mesmo do JWT. Barbeiro e serviço devem existir e o serviço ser do barbeiro."
+          }
+        },
+        {
+          "name": "Cancelar agendamento",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"observation\": \"Não poderei comparecer\"\n}"
+            },
+            "url": "{{baseUrl}}/api/clients/appointments/1",
+            "description": "Substitua 1 pelo ID do agendamento. Body opcional."
+          }
+        },
+        {
+          "name": "Aceitar proposta de reagendamento",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/clients/appointments/1/accept-proposal",
+            "description": "Substitua 1 pelo ID do agendamento."
+          }
+        },
+        {
+          "name": "Rejeitar proposta de reagendamento",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/clients/appointments/1/reject-proposal",
+            "description": "Substitua 1 pelo ID do agendamento."
+          }
+        },
+        {
+          "name": "Reagendar",
+          "request": {
+            "method": "PUT",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"newDate\": \"2025-03-02\",\n  \"newStartTime\": \"15:00\",\n  \"observation\": \"Preferência de horário\"\n}"
+            },
+            "url": "{{baseUrl}}/api/clients/appointments/1/reschedule",
+            "description": "Substitua 1 pelo ID do agendamento."
+          }
+        },
+        {
+          "name": "Listar barbeiros",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/clients/barbers",
+            "description": "Se cliente tem barbeiro vinculado, retorna só ele; senão, todos os barbeiros ativos."
+          }
+        },
+        {
+          "name": "Serviços do barbeiro",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/clients/barbers/1/services",
+            "description": "Substitua 1 pelo ID do barbeiro."
+          }
+        },
+        {
+          "name": "Dias de folga do barbeiro",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/clients/barbers/1/date-off",
+            "description": "Substitua 1 pelo ID do barbeiro. Se cliente vinculado a outro barbeiro, retorna 422."
+          }
+        }
+      ]
+    }
+  ]
+}

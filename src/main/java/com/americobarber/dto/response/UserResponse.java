@@ -36,4 +36,6 @@ public class UserResponse {
     private Instant createdAt;
     @Schema(description = "ID do barbeiro ao qual o cliente está vinculado (apenas para role CLIENT)")
     private Long assignedBarberId;
+    @Schema(description = "Intervalo em minutos da grade de agendamento (apenas barbeiros)")
+    private Integer slotIntervalMinutes;
 }

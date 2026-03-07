@@ -168,6 +168,15 @@ public class ClientController {
         return ResponseEntity.ok(clientService.getBarberDateOff(clientId, barberId));
     }
 
+    @Operation(summary = "Horários disponíveis", description = "Calcula horários disponíveis para um barbeiro em uma data específica considerando serviços escolhidos.")
+    @GetMapping("/barbers/{barberId}/available-times")
+    public ResponseEntity<List<java.time.LocalTime>> getAvailableTimes(
+            @PathVariable Long barberId,
+            @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate date,
+            @RequestParam List<Long> serviceIds) {
+        return ResponseEntity.ok(clientService.getAvailableTimes(barberId, date, serviceIds));
+    }
+
     private Long getUserId(HttpServletRequest request) {
         String auth = request.getHeader("Authorization");
         String token = auth != null && auth.startsWith("Bearer ") ? auth.substring(7) : "";

@@ -25,9 +25,9 @@ public class AppointmentRequest {
     @Schema(description = "ID do barbeiro", requiredMode = Schema.RequiredMode.REQUIRED)
     private Long barberId;
 
-    @NotNull(message = "Serviço é obrigatório")
-    @Schema(description = "ID do serviço (deve ser do barbeiro informado)", requiredMode = Schema.RequiredMode.REQUIRED)
-    private Long serviceId;
+    @jakarta.validation.constraints.NotEmpty(message = "Pelo menos um serviço é obrigatório")
+    @Schema(description = "Lista de IDs dos serviços selecionados", requiredMode = Schema.RequiredMode.REQUIRED)
+    private java.util.List<Long> serviceIds;
 
     @NotNull(message = "Data é obrigatória")
     @Schema(description = "Data do agendamento (yyyy-MM-dd)", example = "2025-03-01", requiredMode = Schema.RequiredMode.REQUIRED)
@@ -36,4 +36,7 @@ public class AppointmentRequest {
     @NotNull(message = "Horário de início é obrigatório")
     @Schema(description = "Horário de início (HH:mm). Fim calculado pela duração do serviço", example = "14:00", requiredMode = Schema.RequiredMode.REQUIRED)
     private LocalTime startTime;
+
+    @Schema(description = "Observações ou notas do cliente", example = "Quero o degradê bem baixo")
+    private String observation;
 }

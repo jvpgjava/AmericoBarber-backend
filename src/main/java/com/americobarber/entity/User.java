@@ -71,6 +71,10 @@ public class User {
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 
+    @Column(name = "slot_interval_minutes")
+    @Builder.Default
+    private Integer slotIntervalMinutes = 30;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "assigned_barber_id")
     private User assignedBarber;

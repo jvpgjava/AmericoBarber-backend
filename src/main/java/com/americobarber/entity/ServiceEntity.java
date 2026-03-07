@@ -56,7 +56,7 @@ public class ServiceEntity {
     @JoinColumn(name = "barber_id", nullable = false)
     private User barber;
 
-    @OneToMany(mappedBy = "service")
+    @jakarta.persistence.ManyToMany(mappedBy = "services")
     @Builder.Default
     private List<Appointment> appointments = new ArrayList<>();
 }

@@ -34,4 +34,6 @@ public interface ClientService {
     List<ServiceResponse> listServicesByBarber(Long barberId);
 
     List<LocalDate> getBarberDateOff(Long clientId, Long barberId);
+
+    List<java.time.LocalTime> getAvailableTimes(Long barberId, LocalDate date, List<Long> serviceIds);
 }

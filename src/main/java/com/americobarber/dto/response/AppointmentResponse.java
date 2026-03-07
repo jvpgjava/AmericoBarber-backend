@@ -28,10 +28,10 @@ public class AppointmentResponse {
     private Long barberId;
     @Schema(description = "Nome do barbeiro")
     private String barberName;
-    @Schema(description = "ID do serviço")
-    private Long serviceId;
-    @Schema(description = "Nome do serviço")
-    private String serviceName;
+    @Schema(description = "Lista de serviços do agendamento")
+    private java.util.List<ServiceResponse> services;
+    @Schema(description = "Preço total do agendamento")
+    private java.math.BigDecimal totalPrice;
     @Schema(description = "Data do agendamento")
     private LocalDate date;
     @Schema(description = "Horário de início")
@@ -50,6 +50,10 @@ public class AppointmentResponse {
     private LocalTime proposedStartTime;
     @Schema(description = "Hora fim proposta pelo barbeiro")
     private LocalTime proposedEndTime;
+    @Schema(description = "Celular do cliente")
+    private String clientPhone;
+    @Schema(description = "Celular do barbeiro")
+    private String barberPhone;
     @Schema(description = "Data de criação do registro")
     private Instant createdAt;
 }

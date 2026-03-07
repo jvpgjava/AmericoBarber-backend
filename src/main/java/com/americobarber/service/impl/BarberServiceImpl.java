@@ -124,7 +124,9 @@ public class BarberServiceImpl implements BarberService {
         if (request.getProposedDate().equals(today) && !request.getProposedStartTime().isAfter(LocalTime.now())) {
             throw new BusinessException("Escolha um horário futuro.");
         }
-        int duration = appointment.getService().getDurationMinutes() != null ? appointment.getService().getDurationMinutes() : 60;
+        int duration = appointment.getServices().stream()
+                .mapToInt(s -> s.getDurationMinutes() != null ? s.getDurationMinutes() : 60)
+                .sum();
         LocalTime proposedEnd = request.getProposedStartTime().plusMinutes(duration);
         List<Appointment> overlapping = appointmentRepository.findOverlappingAppointments(
                 barberId, request.getProposedDate(), request.getProposedStartTime(), proposedEnd, appointmentId);
@@ -243,5 +245,14 @@ public class BarberServiceImpl implements BarberService {
         return serviceRepository.findByBarberIdAndActiveTrue(barberId).stream()
                 .map(serviceMapper::toResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public UserResponse updateSlotInterval(Long barberId, com.americobarber.dto.request.SlotIntervalRequest request) {
+        User barber = userRepository.findById(barberId).orElseThrow(() -> new ResourceNotFoundException("Barbeiro", barberId));
+        barber.setSlotIntervalMinutes(request.getSlotIntervalMinutes());
+        barber = userRepository.save(barber);
+        return userMapper.toResponse(barber);
     }
 }

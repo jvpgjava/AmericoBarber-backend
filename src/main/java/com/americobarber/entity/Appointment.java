@@ -49,9 +49,16 @@ public class Appointment {
     @JoinColumn(name = "barber_id", nullable = false)
     private User barber;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "service_id", nullable = false)
-    private ServiceEntity service;
+    @jakarta.persistence.ManyToMany(fetch = FetchType.LAZY)
+    @jakarta.persistence.JoinTable(
+        name = "appointment_services",
+        joinColumns = @JoinColumn(name = "appointment_id"),
+        inverseJoinColumns = @JoinColumn(name = "service_id")
+    )
+    private java.util.List<ServiceEntity> services = new java.util.ArrayList<>();
+
+    @Column(name = "total_price", precision = 10, scale = 2)
+    private java.math.BigDecimal totalPrice;
 
     @Column(nullable = false)
     private LocalDate date;

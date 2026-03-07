@@ -169,6 +169,16 @@ public class BarberController {
         return ResponseEntity.ok(barberService.updateMyService(barberId, serviceId, body));
     }
 
+    @Operation(summary = "Atualizar intervalo da grade", description = "Define o intervalo em minutos para a grade de horários.")
+    @ApiResponse(responseCode = "200", description = "Perfil atualizado")
+    @PutMapping("/profile/slot-interval")
+    public ResponseEntity<UserResponse> updateSlotInterval(
+            HttpServletRequest request,
+            @Valid @RequestBody com.americobarber.dto.request.SlotIntervalRequest body) {
+        Long barberId = getBarberId(request);
+        return ResponseEntity.ok(barberService.updateSlotInterval(barberId, body));
+    }
+
     private Long getBarberId(HttpServletRequest request) {
         String auth = request.getHeader("Authorization");
         String token = auth != null && auth.startsWith("Bearer ") ? auth.substring(7) : "";

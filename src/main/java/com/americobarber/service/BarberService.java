@@ -37,4 +37,6 @@ public interface BarberService {
     ServiceResponse updateMyService(Long barberId, Long serviceId, ServiceRequest request);
 
     List<ServiceResponse> listMyServices(Long barberId);
+
+    UserResponse updateSlotInterval(Long barberId, com.americobarber.dto.request.SlotIntervalRequest request);
 }

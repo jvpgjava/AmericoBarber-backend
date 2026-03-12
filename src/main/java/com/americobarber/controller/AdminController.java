@@ -30,6 +30,50 @@ import java.util.List;
 public class AdminController {
 
     private final AdminService adminService;
+    private final com.americobarber.service.BarberService barberService;
+
+    @Operation(summary = "Obter disponibilidade de um barbeiro", description = "Retorna os horários de atendimento configurados por dia da semana para um barbeiro específico.")
+    @ApiResponse(responseCode = "200", description = "Lista de disponibilidades")
+    @GetMapping("/barbers/{barberId}/availability")
+    public ResponseEntity<List<com.americobarber.dto.response.AvailabilityResponse>> getBarberAvailability(
+            @Parameter(description = "ID do barbeiro") @PathVariable Long barberId) {
+        return ResponseEntity.ok(barberService.getAvailability(barberId));
+    }
+
+    @Operation(summary = "Definir disponibilidade de um barbeiro", description = "Substitui toda a disponibilidade de um barbeiro específico.")
+    @ApiResponse(responseCode = "200", description = "Disponibilidade atualizada")
+    @PutMapping("/barbers/{barberId}/availability")
+    public ResponseEntity<List<com.americobarber.dto.response.AvailabilityResponse>> setBarberAvailability(
+            @Parameter(description = "ID do barbeiro") @PathVariable Long barberId,
+            @Valid @RequestBody List<com.americobarber.dto.request.AvailabilityRequest> body) {
+        return ResponseEntity.ok(barberService.setAvailability(barberId, body));
+    }
+
+    @Operation(summary = "Obter dias de folga de um barbeiro", description = "Retorna as datas em que o barbeiro específico não atende.")
+    @ApiResponse(responseCode = "200", description = "Lista de datas")
+    @GetMapping("/barbers/{barberId}/date-off")
+    public ResponseEntity<List<java.time.LocalDate>> getBarberDateOff(
+            @Parameter(description = "ID do barbeiro") @PathVariable Long barberId) {
+        return ResponseEntity.ok(barberService.getDateOff(barberId));
+    }
+
+    @Operation(summary = "Definir dias de folga de um barbeiro", description = "Substitui a lista de datas em que o barbeiro específico não atende.")
+    @ApiResponse(responseCode = "200", description = "Lista atualizada de datas")
+    @PutMapping("/barbers/{barberId}/date-off")
+    public ResponseEntity<List<java.time.LocalDate>> setBarberDateOff(
+            @Parameter(description = "ID do barbeiro") @PathVariable Long barberId,
+            @Valid @RequestBody com.americobarber.dto.request.BarberDateOffRequest body) {
+        return ResponseEntity.ok(barberService.setDateOff(barberId, body));
+    }
+
+    @Operation(summary = "Atualizar intervalo da grade de um barbeiro", description = "Define o intervalo em minutos para a grade de horários de um barbeiro específico.")
+    @ApiResponse(responseCode = "200", description = "Perfil atualizado")
+    @PutMapping("/barbers/{barberId}/slot-interval")
+    public ResponseEntity<UserResponse> updateBarberSlotInterval(
+            @Parameter(description = "ID do barbeiro") @PathVariable Long barberId,
+            @Valid @RequestBody com.americobarber.dto.request.SlotIntervalRequest body) {
+        return ResponseEntity.ok(barberService.updateSlotInterval(barberId, body));
+    }
 
     @Operation(summary = "Criar barbeiro", description = "Cadastra novo admin barbeiro (role ADMIN + isBarber). Cada um vê só seus clientes/serviços/agendamentos.")
     @ApiResponses(value = {

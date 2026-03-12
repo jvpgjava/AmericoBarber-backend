@@ -23,14 +23,22 @@ pipeline {
         stage('Determine Environment') {
             steps {
                 script {
-                    if (env.BRANCH_NAME == 'main' || env.BRANCH_NAME == 'master') {
+                    String branch = env.BRANCH_NAME ?: env.GIT_BRANCH ?: ""
+                    
+                    if (branch.contains('/')) {
+                        branch = branch.split('/')[-1]
+                    }
+
+                    echo "Detected branch: ${branch}"
+
+                    if (branch == 'master') {
                         env.DEPLOY_ENV = 'prod'
                         env.SERVICE_NAME = 'americobarber-prod'
-                    } else if (env.BRANCH_NAME == 'develop' || env.BRANCH_NAME == 'staging' || env.BRANCH_NAME == 'hml') {
+                    } else if (branch == 'hml' || branch == 'develop' || branch == 'staging') {
                         env.DEPLOY_ENV = 'hml'
                         env.SERVICE_NAME = 'americobarber-hml'
                     } else {
-                        error "Branch ${env.BRANCH_NAME} is not configured for deployment."
+                        error "Branch '${branch}' is not configured for deployment."
                     }
                 }
             }

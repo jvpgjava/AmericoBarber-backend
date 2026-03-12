@@ -26,7 +26,7 @@ pipeline {
                     if (env.BRANCH_NAME == 'main' || env.BRANCH_NAME == 'master') {
                         env.DEPLOY_ENV = 'prod'
                         env.SERVICE_NAME = 'americobarber-prod'
-                    } else if (env.BRANCH_NAME == 'develop' || env.BRANCH_NAME == 'staging') {
+                    } else if (env.BRANCH_NAME == 'develop' || env.BRANCH_NAME == 'staging' || env.BRANCH_NAME == 'hml') {
                         env.DEPLOY_ENV = 'hml'
                         env.SERVICE_NAME = 'americobarber-hml'
                     } else {

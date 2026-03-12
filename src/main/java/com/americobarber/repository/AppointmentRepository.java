@@ -43,4 +43,9 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
     );
 
     List<Appointment> findByStatus(AppointmentStatus status);
+
+    @Query("SELECT a FROM Appointment a WHERE a.status IN " +
+           "(com.americobarber.enums.AppointmentStatus.AGENDADO, com.americobarber.enums.AppointmentStatus.PROPOSTA_REAGENDAMENTO) " +
+           "AND (a.date < :today OR (a.date = :today AND a.endTime <= :now))")
+    List<Appointment> findOverdueAppointments(@Param("today") LocalDate today, @Param("now") LocalTime now);
 }

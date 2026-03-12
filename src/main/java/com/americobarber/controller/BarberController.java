@@ -91,6 +91,20 @@ public class BarberController {
         return ResponseEntity.noContent().build();
     }
 
+    @Operation(summary = "Finalizar atendimento", description = "Marca o agendamento como FINALIZADO.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Atendimento finalizado"),
+        @ApiResponse(responseCode = "422", description = "Agendamento não pode ser finalizado", content = @Content()),
+        @ApiResponse(responseCode = "404", description = "Agendamento não encontrado", content = @Content())
+    })
+    @PutMapping("/appointments/{id}/finalize")
+    public ResponseEntity<AppointmentResponse> finalizeAppointment(
+            HttpServletRequest request,
+            @Parameter(description = "ID do agendamento") @PathVariable Long id) {
+        Long barberId = getBarberId(request);
+        return ResponseEntity.ok(barberService.finalizeAppointment(barberId, id));
+    }
+
     @Operation(summary = "Propor reagendamento", description = "Envia proposta de novo horário ao cliente (status PROPOSTA_REAGENDAMENTO).")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Proposta registrada"),

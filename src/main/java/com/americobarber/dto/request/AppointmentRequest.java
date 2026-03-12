@@ -1,5 +1,6 @@
 package com.americobarber.dto.request;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
@@ -35,6 +36,7 @@ public class AppointmentRequest {
 
     @NotNull(message = "Horário de início é obrigatório")
     @Schema(description = "Horário de início (HH:mm). Fim calculado pela duração do serviço", example = "14:00", requiredMode = Schema.RequiredMode.REQUIRED)
+    @JsonFormat(pattern = "HH:mm")
     private LocalTime startTime;
 
     @Schema(description = "Observações ou notas do cliente", example = "Quero o degradê bem baixo")

@@ -255,4 +255,21 @@ public class BarberServiceImpl implements BarberService {
         barber = userRepository.save(barber);
         return userMapper.toResponse(barber);
     }
+
+    @Override
+    @Transactional
+    public AppointmentResponse finalizeAppointment(Long barberId, Long appointmentId) {
+        Appointment appointment = appointmentRepository.findById(appointmentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Agendamento", appointmentId));
+        if (!appointment.getBarber().getId().equals(barberId)) {
+            throw new BusinessException("Agendamento não pertence a este barbeiro");
+        }
+        if (appointment.getStatus() != AppointmentStatus.AGENDADO
+                && appointment.getStatus() != AppointmentStatus.PROPOSTA_REAGENDAMENTO) {
+            throw new BusinessException("Apenas agendamentos ativos podem ser finalizados");
+        }
+        appointment.setStatus(AppointmentStatus.FINALIZADO);
+        appointment = appointmentRepository.save(appointment);
+        return appointmentMapper.toResponse(appointment);
+    }
 }

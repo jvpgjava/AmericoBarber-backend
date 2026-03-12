@@ -13,6 +13,7 @@ import com.americobarber.enums.AppointmentStatus;
 import com.americobarber.exception.BusinessException;
 import com.americobarber.exception.ResourceNotFoundException;
 import com.americobarber.mapper.AppointmentMapper;
+import com.americobarber.mapper.AvailabilityMapper;
 import com.americobarber.mapper.ServiceMapper;
 import com.americobarber.mapper.UserMapper;
 import com.americobarber.repository.AppointmentRepository;
@@ -42,6 +43,7 @@ public class ClientServiceImpl implements ClientService {
     private final UserMapper userMapper;
     private final ServiceMapper serviceMapper;
     private final AppointmentMapper appointmentMapper;
+    private final AvailabilityMapper availabilityMapper;
 
     @Override
     @Transactional(readOnly = true)
@@ -308,6 +310,14 @@ public class ClientServiceImpl implements ClientService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<com.americobarber.dto.response.AvailabilityResponse> getBarberAvailability(Long barberId) {
+        return availabilityRepository.findByBarberIdOrderByDayOfWeekAscStartTimeAsc(barberId).stream()
+                .map(availabilityMapper::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public List<LocalTime> getAvailableTimes(Long barberId, LocalDate date, List<Long> serviceIds) {
         User barber = userRepository.findById(barberId).orElseThrow(() -> new ResourceNotFoundException("Barbeiro", barberId));
         
@@ -357,7 +367,14 @@ public class ClientServiceImpl implements ClientService {
                 );
 
                 if (!hasOverlap) {
-                    availableSlots.add(current);
+                    // Check if slot overlaps with break time
+                    boolean inBreak = false;
+                    if (av.getBreakStartTime() != null && av.getBreakEndTime() != null) {
+                        inBreak = finalCurrent.isBefore(av.getBreakEndTime()) && slotEnd.isAfter(av.getBreakStartTime());
+                    }
+                    if (!inBreak) {
+                        availableSlots.add(current);
+                    }
                 }
                 
                 current = current.plusMinutes(interval);

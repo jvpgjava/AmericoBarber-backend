@@ -35,5 +35,7 @@ public interface ClientService {
 
     List<LocalDate> getBarberDateOff(Long clientId, Long barberId);
 
+    List<com.americobarber.dto.response.AvailabilityResponse> getBarberAvailability(Long barberId);
+
     List<java.time.LocalTime> getAvailableTimes(Long barberId, LocalDate date, List<Long> serviceIds);
 }

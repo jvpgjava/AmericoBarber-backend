@@ -1,6 +1,7 @@
 package com.americobarber.dto.response;
 
 import com.americobarber.enums.AppointmentStatus;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -35,8 +36,10 @@ public class AppointmentResponse {
     @Schema(description = "Data do agendamento")
     private LocalDate date;
     @Schema(description = "Horário de início")
+    @JsonFormat(pattern = "HH:mm")
     private LocalTime startTime;
     @Schema(description = "Horário de fim (calculado pela duração do serviço)")
+    @JsonFormat(pattern = "HH:mm")
     private LocalTime endTime;
     @Schema(description = "Status: AGENDADO, CANCELADO, CANCELADO_POR_BARBEIRO, CANCELADO_POR_CLIENTE, PROPOSTA_REAGENDAMENTO, FINALIZADO")
     private AppointmentStatus status;
@@ -47,8 +50,10 @@ public class AppointmentResponse {
     @Schema(description = "Data proposta pelo barbeiro para reagendamento")
     private LocalDate proposedDate;
     @Schema(description = "Hora início proposta pelo barbeiro")
+    @JsonFormat(pattern = "HH:mm")
     private LocalTime proposedStartTime;
     @Schema(description = "Hora fim proposta pelo barbeiro")
+    @JsonFormat(pattern = "HH:mm")
     private LocalTime proposedEndTime;
     @Schema(description = "Celular do cliente")
     private String clientPhone;

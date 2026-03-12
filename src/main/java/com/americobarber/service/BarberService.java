@@ -39,4 +39,6 @@ public interface BarberService {
     List<ServiceResponse> listMyServices(Long barberId);
 
     UserResponse updateSlotInterval(Long barberId, com.americobarber.dto.request.SlotIntervalRequest request);
+
+    AppointmentResponse finalizeAppointment(Long barberId, Long appointmentId);
 }

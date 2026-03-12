@@ -155,6 +155,13 @@ public class ClientController {
         return ResponseEntity.ok(clientService.listServicesByBarber(barberId));
     }
 
+    @Operation(summary = "Disponibilidade semanal do barbeiro", description = "Retorna os dias e horários em que o barbeiro atende (para o calendário do cliente).")
+    @GetMapping("/barbers/{barberId}/availability")
+    public ResponseEntity<List<com.americobarber.dto.response.AvailabilityResponse>> getBarberAvailability(
+            @Parameter(description = "ID do barbeiro") @PathVariable Long barberId) {
+        return ResponseEntity.ok(clientService.getBarberAvailability(barberId));
+    }
+
     @Operation(summary = "Dias de folga do barbeiro", description = "Datas em que o barbeiro não atende (para o calendário do cliente). Se cliente tem barbeiro vinculado, só pode consultar o seu.")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "Lista de datas"),

@@ -42,6 +42,7 @@ public class AuthServiceImpl implements AuthService {
                 .email(user.getEmail())
                 .role(user.getRole())
                 .isBarber(Boolean.TRUE.equals(user.getIsBarber()))
+                .profilePicture(user.getProfilePicture())
                 .build();
     }
 
@@ -83,6 +84,7 @@ public class AuthServiceImpl implements AuthService {
                 .email(user.getEmail())
                 .role(user.getRole())
                 .isBarber(Boolean.TRUE.equals(user.getIsBarber()))
+                .profilePicture(user.getProfilePicture())
                 .build();
     }
 }

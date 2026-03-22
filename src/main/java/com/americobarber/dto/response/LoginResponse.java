@@ -28,4 +28,6 @@ public class LoginResponse {
     private UserRole role;
     @Schema(description = "Quando true, o admin atua como barbeiro (painel próprio)")
     private Boolean isBarber;
+    @Schema(description = "Foto de perfil do usuário, retornada em base64 ou URL")
+    private String profilePicture;
 }

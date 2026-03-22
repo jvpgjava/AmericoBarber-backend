@@ -99,6 +99,7 @@ public class AdminServiceImpl implements AdminService {
             }
             user.setAssignedBarber(barber);
         }
+        if (request.getProfilePicture() != null) user.setProfilePicture(request.getProfilePicture());
         user = userRepository.save(user);
         return userMapper.toResponse(user);
     }

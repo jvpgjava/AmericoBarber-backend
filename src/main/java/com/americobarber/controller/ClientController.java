@@ -43,6 +43,16 @@ public class ClientController {
         return ResponseEntity.ok(clientService.getProfile(clientId));
     }
 
+    @Operation(summary = "Atualizar perfil", description = "Atualiza dados do cliente autenticado (nome, email, telefone, foto de perfil).")
+    @ApiResponse(responseCode = "200", description = "Perfil atualizado")
+    @PutMapping("/profile")
+    public ResponseEntity<UserResponse> updateProfile(
+            HttpServletRequest request,
+            @Valid @RequestBody com.americobarber.dto.request.UserUpdateRequest body) {
+        Long clientId = getUserId(request);
+        return ResponseEntity.ok(clientService.updateProfile(clientId, body));
+    }
+
     @Operation(summary = "Meus agendamentos", description = "Lista agendamentos ativos (status AGENDADO) do cliente.")
     @ApiResponse(responseCode = "200", description = "Lista de agendamentos")
     @GetMapping("/appointments")

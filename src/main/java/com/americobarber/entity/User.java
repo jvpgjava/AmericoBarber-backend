@@ -95,6 +95,9 @@ public class User {
     @Builder.Default
     private List<Availability> availabilities = new ArrayList<>();
 
+    @Column(name = "profile_picture", columnDefinition = "TEXT")
+    private String profilePicture;
+
     @jakarta.persistence.PrePersist
     protected void onCreate() {
         if (createdAt == null) {

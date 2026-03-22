@@ -61,4 +61,6 @@ public class AppointmentResponse {
     private String barberPhone;
     @Schema(description = "Data de criação do registro")
     private Instant createdAt;
+    @Schema(description = "Foto de perfil do cliente em Base64")
+    private String clientProfilePicture;
 }

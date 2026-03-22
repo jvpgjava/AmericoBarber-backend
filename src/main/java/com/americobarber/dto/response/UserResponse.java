@@ -38,4 +38,6 @@ public class UserResponse {
     private Long assignedBarberId;
     @Schema(description = "Intervalo em minutos da grade de agendamento (apenas barbeiros)")
     private Integer slotIntervalMinutes;
+    @Schema(description = "Foto de perfil em Base64")
+    private String profilePicture;
 }

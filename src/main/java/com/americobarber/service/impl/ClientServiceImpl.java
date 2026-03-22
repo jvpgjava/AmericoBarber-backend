@@ -53,6 +53,18 @@ public class ClientServiceImpl implements ClientService {
     }
 
     @Override
+    @Transactional
+    public UserResponse updateProfile(Long clientId, com.americobarber.dto.request.UserUpdateRequest request) {
+        User user = userRepository.findById(clientId).orElseThrow(() -> new ResourceNotFoundException("User", clientId));
+        if (request.getName() != null && !request.getName().isBlank()) user.setName(request.getName());
+        if (request.getEmail() != null && !request.getEmail().isBlank()) user.setEmail(request.getEmail());
+        if (request.getPhone() != null) user.setPhone(request.getPhone());
+        if (request.getProfilePicture() != null) user.setProfilePicture(request.getProfilePicture());
+        user = userRepository.save(user);
+        return userMapper.toResponse(user);
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public List<AppointmentResponse> myAppointments(Long clientId) {
         return appointmentRepository.findByClientIdOrderByDateDescStartTimeDesc(clientId).stream()

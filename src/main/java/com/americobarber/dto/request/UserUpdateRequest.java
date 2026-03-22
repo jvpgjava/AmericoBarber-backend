@@ -37,4 +37,7 @@ public class UserUpdateRequest {
 
     @Schema(description = "ID do barbeiro ao qual o cliente está vinculado (apenas para role CLIENT)")
     private Long assignedBarberId;
+
+    @Schema(description = "Foto de perfil em Base64")
+    private String profilePicture;
 }

@@ -13,6 +13,8 @@ public interface ClientService {
 
     UserResponse getProfile(Long clientId);
 
+    UserResponse updateProfile(Long clientId, com.americobarber.dto.request.UserUpdateRequest request);
+
     List<AppointmentResponse> myAppointments(Long clientId);
 
     List<AppointmentResponse> myHistory(Long clientId);

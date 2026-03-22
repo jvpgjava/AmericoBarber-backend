@@ -15,5 +15,6 @@ public interface AppointmentMapper {
     @Mapping(source = "barber.name", target = "barberName")
     @Mapping(source = "client.phone", target = "clientPhone")
     @Mapping(source = "barber.phone", target = "barberPhone")
+    @Mapping(source = "client.profilePicture", target = "clientProfilePicture")
     AppointmentResponse toResponse(Appointment appointment);
 }

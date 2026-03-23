@@ -288,9 +288,11 @@ public class ClientServiceImpl implements ClientService {
     @Override
     @Transactional(readOnly = true)
     public List<UserResponse> listBarbers(Long clientId) {
-        User client = userRepository.findById(clientId).orElseThrow(() -> new ResourceNotFoundException("Cliente", clientId));
-        if (client.getAssignedBarber() != null) {
-            return java.util.List.of(userMapper.toResponse(client.getAssignedBarber()));
+        if (clientId != null) {
+            User client = userRepository.findById(clientId).orElseThrow(() -> new ResourceNotFoundException("Cliente", clientId));
+            if (client.getAssignedBarber() != null) {
+                return java.util.List.of(userMapper.toResponse(client.getAssignedBarber()));
+            }
         }
         return userRepository.findByIsBarberTrueAndActiveTrue().stream()
                 .map(userMapper::toResponse)
@@ -300,6 +302,12 @@ public class ClientServiceImpl implements ClientService {
     @Override
     @Transactional(readOnly = true)
     public List<ServiceResponse> listServicesByBarber(Long barberId) {
+        if (barberId == null) {
+            return serviceRepository.findAll().stream()
+                    .filter(s -> Boolean.TRUE.equals(s.getActive()))
+                    .map(serviceMapper::toResponse)
+                    .collect(Collectors.toList());
+        }
         return serviceRepository.findByBarberIdAndActiveTrue(barberId).stream()
                 .map(serviceMapper::toResponse)
                 .collect(Collectors.toList());

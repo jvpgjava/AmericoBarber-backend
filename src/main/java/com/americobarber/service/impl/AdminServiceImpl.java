@@ -56,6 +56,7 @@ public class AdminServiceImpl implements AdminService {
                 .cpf(request.getCpf())
                 .phone(request.getPhone())
                 .password(passwordEncoder.encode(request.getPassword()))
+                .description(request.getDescription())
                 .role(UserRole.ROLE_ADMIN)
                 .isBarber(true)
                 .active(true)
@@ -100,6 +101,7 @@ public class AdminServiceImpl implements AdminService {
             user.setAssignedBarber(barber);
         }
         if (request.getProfilePicture() != null) user.setProfilePicture(request.getProfilePicture());
+        if (request.getDescription() != null) user.setDescription(request.getDescription());
         user = userRepository.save(user);
         return userMapper.toResponse(user);
     }

@@ -40,4 +40,6 @@ public class UserResponse {
     private Integer slotIntervalMinutes;
     @Schema(description = "Foto de perfil em Base64")
     private String profilePicture;
+    @Schema(description = "Descrição/Bio do barbeiro")
+    private String description;
 }

@@ -41,4 +41,8 @@ public class CreateBarberRequest {
     @Size(min = 6, max = 255)
     @Schema(description = "Senha (mínimo 6 caracteres)", requiredMode = Schema.RequiredMode.REQUIRED)
     private String password;
+
+    @Size(max = 255)
+    @Schema(description = "Descrição/Bio do barbeiro")
+    private String description;
 }

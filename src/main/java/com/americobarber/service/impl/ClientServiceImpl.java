@@ -60,6 +60,7 @@ public class ClientServiceImpl implements ClientService {
         if (request.getEmail() != null && !request.getEmail().isBlank()) user.setEmail(request.getEmail());
         if (request.getPhone() != null) user.setPhone(request.getPhone());
         if (request.getProfilePicture() != null) user.setProfilePicture(request.getProfilePicture());
+        if (request.getDescription() != null) user.setDescription(request.getDescription());
         user = userRepository.save(user);
         return userMapper.toResponse(user);
     }

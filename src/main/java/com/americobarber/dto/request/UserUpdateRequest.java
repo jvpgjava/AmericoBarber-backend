@@ -40,4 +40,7 @@ public class UserUpdateRequest {
 
     @Schema(description = "Foto de perfil em Base64")
     private String profilePicture;
+
+    @Schema(description = "Descrição/Bio")
+    private String description;
 }

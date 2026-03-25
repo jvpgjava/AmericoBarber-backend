@@ -98,6 +98,9 @@ public class User {
     @Column(name = "profile_picture", columnDefinition = "TEXT")
     private String profilePicture;
 
+    @Column(name = "description", length = 255)
+    private String description;
+
     @jakarta.persistence.PrePersist
     protected void onCreate() {
         if (createdAt == null) {

@@ -1,5 +1,6 @@
 package com.americobarber.service;
 
+import com.americobarber.dto.request.AppointmentRequest;
 import com.americobarber.dto.request.CreateBarberRequest;
 import com.americobarber.dto.request.ServiceRequest;
 import com.americobarber.dto.request.UserUpdateRequest;
@@ -14,6 +15,8 @@ public interface AdminService {
     UserResponse createBarber(CreateBarberRequest request);
 
     UserResponse updateUser(Long id, UserUpdateRequest request);
+
+    AppointmentResponse createAppointmentForClient(AppointmentRequest request);
 
     List<UserResponse> listBarbers();
 

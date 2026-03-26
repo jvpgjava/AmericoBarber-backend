@@ -106,6 +106,18 @@ public class AdminController {
         return ResponseEntity.ok(adminService.listBarbers());
     }
 
+    @Operation(summary = "Criar agendamento para cliente", description = "Cria agendamento em nome de um cliente. Admin não precisa ser o cliente.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "201", description = "Agendamento criado"),
+        @ApiResponse(responseCode = "422", description = "Regra de negócio (horário ocupado, serviço inativo, etc.)", content = @Content()),
+        @ApiResponse(responseCode = "404", description = "Cliente, barbeiro ou serviço não encontrado", content = @Content())
+    })
+    @PostMapping("/appointments")
+    public ResponseEntity<AppointmentResponse> createAppointmentForClient(
+            @Valid @RequestBody com.americobarber.dto.request.AppointmentRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(adminService.createAppointmentForClient(request));
+    }
+
     @Operation(summary = "Listar clientes", description = "Retorna todos os usuários com role ROLE_CLIENT.")
     @ApiResponse(responseCode = "200", description = "Lista de clientes")
     @GetMapping("/clients")

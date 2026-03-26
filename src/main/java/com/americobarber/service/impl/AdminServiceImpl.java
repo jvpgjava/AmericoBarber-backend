@@ -1,13 +1,16 @@
 package com.americobarber.service.impl;
 
+import com.americobarber.dto.request.AppointmentRequest;
 import com.americobarber.dto.request.CreateBarberRequest;
 import com.americobarber.dto.request.ServiceRequest;
 import com.americobarber.dto.request.UserUpdateRequest;
 import com.americobarber.dto.response.AppointmentResponse;
 import com.americobarber.dto.response.ServiceResponse;
 import com.americobarber.dto.response.UserResponse;
+import com.americobarber.entity.Appointment;
 import com.americobarber.entity.ServiceEntity;
 import com.americobarber.entity.User;
+import com.americobarber.enums.AppointmentStatus;
 import com.americobarber.enums.UserRole;
 import com.americobarber.exception.BusinessException;
 import com.americobarber.exception.ResourceNotFoundException;
@@ -15,6 +18,7 @@ import com.americobarber.mapper.AppointmentMapper;
 import com.americobarber.mapper.ServiceMapper;
 import com.americobarber.mapper.UserMapper;
 import com.americobarber.repository.AppointmentRepository;
+import com.americobarber.repository.BarberDateOffRepository;
 import com.americobarber.repository.ServiceRepository;
 import com.americobarber.repository.UserRepository;
 import com.americobarber.service.AdminService;
@@ -23,6 +27,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -33,6 +39,7 @@ public class AdminServiceImpl implements AdminService {
     private final UserRepository userRepository;
     private final ServiceRepository serviceRepository;
     private final AppointmentRepository appointmentRepository;
+    private final BarberDateOffRepository barberDateOffRepository;
     private final UserMapper userMapper;
     private final ServiceMapper serviceMapper;
     private final AppointmentMapper appointmentMapper;
@@ -104,6 +111,69 @@ public class AdminServiceImpl implements AdminService {
         if (request.getDescription() != null) user.setDescription(request.getDescription());
         user = userRepository.save(user);
         return userMapper.toResponse(user);
+    }
+
+    @Override
+    @Transactional
+    public AppointmentResponse createAppointmentForClient(AppointmentRequest request) {
+        if (request.getClientId() == null || request.getBarberId() == null || request.getServiceIds() == null || request.getServiceIds().isEmpty()) {
+            throw new BusinessException("Cliente, barbeiro e pelo menos um serviço são obrigatórios");
+        }
+        if (request.getDate() == null || request.getStartTime() == null) {
+            throw new BusinessException("Data e horário são obrigatórios");
+        }
+
+        User client = userRepository.findById(request.getClientId())
+                .orElseThrow(() -> new ResourceNotFoundException("Cliente", request.getClientId()));
+        User barber = userRepository.findById(request.getBarberId())
+                .orElseThrow(() -> new ResourceNotFoundException("Barbeiro", request.getBarberId()));
+
+        List<ServiceEntity> services = serviceRepository.findAllById(request.getServiceIds());
+        if (services.size() < request.getServiceIds().size()) {
+            throw new BusinessException("Um ou mais serviços informados não foram encontrados");
+        }
+
+        java.math.BigDecimal totalPrice = java.math.BigDecimal.ZERO;
+        int totalDuration = 0;
+        for (ServiceEntity service : services) {
+            if (!Boolean.TRUE.equals(service.getActive())) {
+                throw new BusinessException("Serviço inativo: " + service.getName());
+            }
+            if (!service.getBarber().getId().equals(barber.getId())) {
+                throw new BusinessException("Serviço " + service.getName() + " não pertence ao barbeiro informado");
+            }
+            if (service.getPrice() != null) {
+                totalPrice = totalPrice.add(service.getPrice());
+            }
+            totalDuration += (service.getDurationMinutes() != null ? service.getDurationMinutes() : 60);
+        }
+
+        if (barberDateOffRepository.existsByBarberIdAndDateOff(request.getBarberId(), request.getDate())) {
+            throw new BusinessException("O barbeiro não atende nesta data.");
+        }
+
+        LocalTime endTime = request.getStartTime().plusMinutes(totalDuration);
+
+        List<Appointment> overlapping = appointmentRepository.findOverlappingAppointments(
+                request.getBarberId(), request.getDate(), request.getStartTime(), endTime, null);
+        if (!overlapping.isEmpty()) {
+            throw new BusinessException("Horário já ocupado para este barbeiro");
+        }
+
+        Appointment appointment = Appointment.builder()
+                .client(client)
+                .barber(barber)
+                .services(services)
+                .totalPrice(totalPrice)
+                .date(request.getDate())
+                .startTime(request.getStartTime())
+                .endTime(endTime)
+                .status(AppointmentStatus.AGENDADO)
+                .observation(request.getObservation())
+                .build();
+
+        appointment = appointmentRepository.save(appointment);
+        return appointmentMapper.toResponse(appointment);
     }
 
     @Override

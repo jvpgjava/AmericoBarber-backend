@@ -68,6 +68,10 @@ public class User {
     @Builder.Default
     private Boolean isBarber = false;
 
+    @Column(name = "is_owner", nullable = false)
+    @Builder.Default
+    private Boolean isOwner = false;
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 

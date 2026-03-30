@@ -32,6 +32,8 @@ public class UserResponse {
     private Boolean active;
     @Schema(description = "Quando true, o admin atua como barbeiro (vê só seus clientes/serviços/agendamentos)")
     private Boolean isBarber;
+    @Schema(description = "Quando true, o admin é o dono da barbearia (pode gerenciar colaboradores)")
+    private Boolean isOwner;
     @Schema(description = "Data de criação")
     private Instant createdAt;
     @Schema(description = "ID do barbeiro ao qual o cliente está vinculado (apenas para role CLIENT)")

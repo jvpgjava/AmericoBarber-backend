@@ -22,6 +22,7 @@ import com.americobarber.repository.BarberDateOffRepository;
 import com.americobarber.repository.ServiceRepository;
 import com.americobarber.repository.UserRepository;
 import com.americobarber.service.ClientService;
+import com.americobarber.service.SseService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,6 +45,7 @@ public class ClientServiceImpl implements ClientService {
     private final ServiceMapper serviceMapper;
     private final AppointmentMapper appointmentMapper;
     private final AvailabilityMapper availabilityMapper;
+    private final SseService sseService;
 
     @Override
     @Transactional(readOnly = true)
@@ -164,6 +166,7 @@ public class ClientServiceImpl implements ClientService {
                 .build();
 
         appointment = appointmentRepository.save(appointment);
+        sseService.broadcast("APPOINTMENT_UPDATE", appointment.getId());
         return appointmentMapper.toResponse(appointment);
     }
 
@@ -190,6 +193,7 @@ public class ClientServiceImpl implements ClientService {
         appointment.setStatus(AppointmentStatus.CANCELADO_POR_CLIENTE);
         appointment.setObservation(observation);
         appointmentRepository.save(appointment);
+        sseService.broadcast("APPOINTMENT_UPDATE", appointment.getId());
     }
 
     @Override
@@ -215,6 +219,7 @@ public class ClientServiceImpl implements ClientService {
         appointment.setProposedEndTime(null);
         appointment.setBarberMessage(null);
         appointment = appointmentRepository.save(appointment);
+        sseService.broadcast("APPOINTMENT_UPDATE", appointment.getId());
         return appointmentMapper.toResponse(appointment);
     }
 
@@ -238,6 +243,7 @@ public class ClientServiceImpl implements ClientService {
         appointment.setProposedEndTime(null);
         appointment.setBarberMessage(null);
         appointmentRepository.save(appointment);
+        sseService.broadcast("APPOINTMENT_UPDATE", appointment.getId());
     }
 
     @Override
@@ -283,6 +289,7 @@ public class ClientServiceImpl implements ClientService {
         appointment.setProposedEndTime(null);
         appointment.setBarberMessage(null);
         appointment = appointmentRepository.save(appointment);
+        sseService.broadcast("APPOINTMENT_UPDATE", appointment.getId());
         return appointmentMapper.toResponse(appointment);
     }
 

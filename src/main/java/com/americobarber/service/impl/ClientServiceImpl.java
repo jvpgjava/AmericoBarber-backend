@@ -172,6 +172,7 @@ public class ClientServiceImpl implements ClientService {
                 .startTime(request.getStartTime())
                 .endTime(endTime)
                 .status(AppointmentStatus.AGENDADO)
+                .observation(request.getObservation())
                 .build();
 
         appointment = appointmentRepository.save(appointment);

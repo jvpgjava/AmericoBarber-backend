@@ -24,6 +24,10 @@ public class LoginResponse {
     private String name;
     @Schema(description = "Email do usuário")
     private String email;
+    @Schema(description = "CPF do usuário")
+    private String cpf;
+    @Schema(description = "Telefone do usuário")
+    private String phone;
     @Schema(description = "Papel: ROLE_ADMIN ou ROLE_CLIENT")
     private UserRole role;
     @Schema(description = "Quando true, o admin atua como barbeiro (painel próprio)")

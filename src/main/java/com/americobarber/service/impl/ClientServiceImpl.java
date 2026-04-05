@@ -50,19 +50,26 @@ public class ClientServiceImpl implements ClientService {
     @Override
     @Transactional(readOnly = true)
     public UserResponse getProfile(Long clientId) {
-        User user = userRepository.findById(clientId).orElseThrow(() -> new ResourceNotFoundException("User", clientId));
+        User user = userRepository.findById(clientId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", clientId));
         return userMapper.toResponse(user);
     }
 
     @Override
     @Transactional
     public UserResponse updateProfile(Long clientId, com.americobarber.dto.request.UserUpdateRequest request) {
-        User user = userRepository.findById(clientId).orElseThrow(() -> new ResourceNotFoundException("User", clientId));
-        if (request.getName() != null && !request.getName().isBlank()) user.setName(request.getName());
-        if (request.getEmail() != null && !request.getEmail().isBlank()) user.setEmail(request.getEmail());
-        if (request.getPhone() != null) user.setPhone(request.getPhone());
-        if (request.getProfilePicture() != null) user.setProfilePicture(request.getProfilePicture());
-        if (request.getDescription() != null) user.setDescription(request.getDescription());
+        User user = userRepository.findById(clientId)
+                .orElseThrow(() -> new ResourceNotFoundException("User", clientId));
+        if (request.getName() != null && !request.getName().isBlank())
+            user.setName(request.getName());
+        if (request.getEmail() != null && !request.getEmail().isBlank())
+            user.setEmail(request.getEmail());
+        if (request.getPhone() != null)
+            user.setPhone(request.getPhone());
+        if (request.getProfilePicture() != null)
+            user.setProfilePicture(request.getProfilePicture());
+        if (request.getDescription() != null)
+            user.setDescription(request.getDescription());
         user = userRepository.save(user);
         return userMapper.toResponse(user);
     }
@@ -71,7 +78,8 @@ public class ClientServiceImpl implements ClientService {
     @Transactional(readOnly = true)
     public List<AppointmentResponse> myAppointments(Long clientId) {
         return appointmentRepository.findByClientIdOrderByDateDescStartTimeDesc(clientId).stream()
-                .filter(a -> a.getStatus() == AppointmentStatus.AGENDADO || a.getStatus() == AppointmentStatus.PROPOSTA_REAGENDAMENTO)
+                .filter(a -> a.getStatus() == AppointmentStatus.AGENDADO
+                        || a.getStatus() == AppointmentStatus.PROPOSTA_REAGENDAMENTO)
                 .map(appointmentMapper::toResponse)
                 .collect(Collectors.toList());
     }
@@ -87,7 +95,8 @@ public class ClientServiceImpl implements ClientService {
     @Override
     @Transactional
     public AppointmentResponse createAppointment(Long clientId, AppointmentRequest request) {
-        if (request.getClientId() == null || request.getBarberId() == null || request.getServiceIds() == null || request.getServiceIds().isEmpty()) {
+        if (request.getClientId() == null || request.getBarberId() == null || request.getServiceIds() == null
+                || request.getServiceIds().isEmpty()) {
             throw new BusinessException("Cliente, barbeiro e pelo menos um serviço são obrigatórios");
         }
         if (request.getDate() == null || request.getStartTime() == null) {
@@ -99,7 +108,7 @@ public class ClientServiceImpl implements ClientService {
 
         User client = userRepository.findById(request.getClientId())
                 .orElseThrow(() -> new ResourceNotFoundException("Cliente", request.getClientId()));
-        
+
         if (client.getAssignedBarber() != null && !client.getAssignedBarber().getId().equals(request.getBarberId())) {
             throw new BusinessException("Cliente vinculado a outro barbeiro. Você só pode agendar com seu barbeiro.");
         }
@@ -187,7 +196,8 @@ public class ClientServiceImpl implements ClientService {
         if (!appointment.getClient().getId().equals(clientId)) {
             throw new BusinessException("Agendamento não pertence ao cliente");
         }
-        if (appointment.getStatus() != AppointmentStatus.AGENDADO && appointment.getStatus() != AppointmentStatus.PROPOSTA_REAGENDAMENTO) {
+        if (appointment.getStatus() != AppointmentStatus.AGENDADO
+                && appointment.getStatus() != AppointmentStatus.PROPOSTA_REAGENDAMENTO) {
             throw new BusinessException("Apenas agendamentos ativos ou com proposta pendente podem ser cancelados");
         }
         appointment.setStatus(AppointmentStatus.CANCELADO_POR_CLIENTE);
@@ -207,7 +217,8 @@ public class ClientServiceImpl implements ClientService {
         if (!appointment.getClient().getId().equals(clientId)) {
             throw new BusinessException("Agendamento não pertence ao cliente");
         }
-        if (appointment.getStatus() != AppointmentStatus.PROPOSTA_REAGENDAMENTO || appointment.getProposedDate() == null) {
+        if (appointment.getStatus() != AppointmentStatus.PROPOSTA_REAGENDAMENTO
+                || appointment.getProposedDate() == null) {
             throw new BusinessException("Não há proposta de reagendamento para aceitar");
         }
         appointment.setDate(appointment.getProposedDate());
@@ -248,7 +259,8 @@ public class ClientServiceImpl implements ClientService {
 
     @Override
     @Transactional
-    public AppointmentResponse reschedule(Long clientId, Long appointmentId, com.americobarber.dto.request.RescheduleRequest request) {
+    public AppointmentResponse reschedule(Long clientId, Long appointmentId,
+            com.americobarber.dto.request.RescheduleRequest request) {
         if (appointmentId == null || appointmentId <= 0) {
             throw new BusinessException("ID do agendamento inválido");
         }
@@ -260,22 +272,81 @@ public class ClientServiceImpl implements ClientService {
         if (!appointment.getClient().getId().equals(clientId)) {
             throw new BusinessException("Agendamento não pertence ao cliente");
         }
-        if (appointment.getStatus() != AppointmentStatus.AGENDADO && appointment.getStatus() != AppointmentStatus.PROPOSTA_REAGENDAMENTO) {
+        if (appointment.getStatus() != AppointmentStatus.AGENDADO
+                && appointment.getStatus() != AppointmentStatus.PROPOSTA_REAGENDAMENTO) {
             throw new BusinessException("Apenas agendamentos ativos podem ser reagendados");
         }
         LocalDate today = LocalDate.now();
         if (request.getNewDate().isBefore(today)) {
             throw new BusinessException("Não é possível reagendar para data passada.");
         }
+        if (request.getNewDate().isAfter(today.plusDays(30))) {
+            throw new BusinessException("Reagendamento permitido apenas até 30 dias a partir de hoje.");
+        }
         if (request.getNewDate().equals(today) && !request.getNewStartTime().isAfter(LocalTime.now())) {
             throw new BusinessException("Escolha um horário futuro.");
         }
+
+        Long barberId = appointment.getBarber().getId();
+
+        if (barberDateOffRepository.existsByBarberIdAndDateOff(barberId, request.getNewDate())) {
+            throw new BusinessException("O barbeiro não atende nesta data. Escolha outro dia.");
+        }
+
+        int dayOfWeek = request.getNewDate().getDayOfWeek().getValue();
+        List<Availability> availabilities = availabilityRepository
+                .findByBarberIdOrderByDayOfWeekAscStartTimeAsc(barberId).stream()
+                .filter(a -> a.getDayOfWeek() == dayOfWeek)
+                .collect(Collectors.toList());
+        if (availabilities.isEmpty()) {
+            throw new BusinessException("O barbeiro não trabalha neste dia da semana.");
+        }
+
         int totalDuration = appointment.getServices().stream()
                 .mapToInt(s -> s.getDurationMinutes() != null ? s.getDurationMinutes() : 60)
                 .sum();
         java.time.LocalTime newEndTime = request.getNewStartTime().plusMinutes(totalDuration);
+
+        boolean fitsInAvailability = false;
+        for (Availability av : availabilities) {
+            boolean withinWindow = !request.getNewStartTime().isBefore(av.getStartTime())
+                    && (newEndTime.isBefore(av.getEndTime()) || newEndTime.equals(av.getEndTime()));
+            if (!withinWindow)
+                continue;
+            boolean inBreak = false;
+            if (av.getBreakStartTime() != null && av.getBreakEndTime() != null) {
+                inBreak = request.getNewStartTime().isBefore(av.getBreakEndTime())
+                        && newEndTime.isAfter(av.getBreakStartTime());
+            }
+            if (!inBreak) {
+                fitsInAvailability = true;
+                break;
+            }
+        }
+        if (!fitsInAvailability) {
+            throw new BusinessException("Horário fora do expediente do barbeiro ou durante a pausa.");
+        }
+
+        int interval = appointment.getBarber().getSlotIntervalMinutes() != null
+                ? appointment.getBarber().getSlotIntervalMinutes()
+                : 30;
+        LocalTime windowStart = availabilities.get(0).getStartTime();
+        int minutesFromStart = (request.getNewStartTime().getHour() - windowStart.getHour()) * 60
+                + (request.getNewStartTime().getMinute() - windowStart.getMinute());
+        boolean alignedToGrid = minutesFromStart >= 0 && minutesFromStart % interval == 0;
+        if (!alignedToGrid) {
+            boolean matchesExistingBoundary = appointmentRepository
+                    .findByBarberIdAndDateOrderByStartTimeAsc(barberId, request.getNewDate()).stream()
+                    .filter(a -> !a.getId().equals(appointmentId))
+                    .anyMatch(a -> a.getEndTime().equals(request.getNewStartTime()));
+            if (!matchesExistingBoundary) {
+                throw new BusinessException("Horário inválido. Escolha um horário da grade de agendamento.");
+            }
+        }
+
         List<Appointment> overlapping = appointmentRepository.findOverlappingAppointments(
-                appointment.getBarber().getId(), request.getNewDate(), request.getNewStartTime(), newEndTime, appointmentId);
+                barberId, request.getNewDate(), request.getNewStartTime(), newEndTime,
+                appointmentId);
         if (!overlapping.isEmpty()) {
             throw new BusinessException("Novo horário já ocupado para este barbeiro");
         }
@@ -297,7 +368,8 @@ public class ClientServiceImpl implements ClientService {
     @Transactional(readOnly = true)
     public List<UserResponse> listBarbers(Long clientId) {
         if (clientId != null) {
-            User client = userRepository.findById(clientId).orElseThrow(() -> new ResourceNotFoundException("Cliente", clientId));
+            User client = userRepository.findById(clientId)
+                    .orElseThrow(() -> new ResourceNotFoundException("Cliente", clientId));
             if (client.getAssignedBarber() != null) {
                 return java.util.List.of(userMapper.toResponse(client.getAssignedBarber()));
             }
@@ -327,7 +399,8 @@ public class ClientServiceImpl implements ClientService {
         if (barberId == null || barberId <= 0) {
             throw new BusinessException("ID do barbeiro inválido");
         }
-        User client = userRepository.findById(clientId).orElseThrow(() -> new ResourceNotFoundException("Cliente", clientId));
+        User client = userRepository.findById(clientId)
+                .orElseThrow(() -> new ResourceNotFoundException("Cliente", clientId));
         if (client.getAssignedBarber() != null && !client.getAssignedBarber().getId().equals(barberId)) {
             throw new BusinessException("Você só pode consultar disponibilidade do seu barbeiro");
         }
@@ -347,68 +420,80 @@ public class ClientServiceImpl implements ClientService {
     @Override
     @Transactional(readOnly = true)
     public List<LocalTime> getAvailableTimes(Long barberId, LocalDate date, List<Long> serviceIds) {
-        User barber = userRepository.findById(barberId).orElseThrow(() -> new ResourceNotFoundException("Barbeiro", barberId));
-        
+        User barber = userRepository.findById(barberId)
+                .orElseThrow(() -> new ResourceNotFoundException("Barbeiro", barberId));
+
         if (barberDateOffRepository.existsByBarberIdAndDateOff(barberId, date)) {
             return List.of();
         }
 
         int dayOfWeek = date.getDayOfWeek().getValue();
-        List<Availability> availabilities = availabilityRepository.findByBarberIdOrderByDayOfWeekAscStartTimeAsc(barberId).stream()
+        List<Availability> availabilities = availabilityRepository
+                .findByBarberIdOrderByDayOfWeekAscStartTimeAsc(barberId).stream()
                 .filter(a -> a.getDayOfWeek() == dayOfWeek)
                 .collect(Collectors.toList());
-        
+
         if (availabilities.isEmpty()) {
             return List.of();
         }
 
-        List<Appointment> appointments = appointmentRepository.findByBarberIdAndDateOrderByStartTimeAsc(barberId, date).stream()
-                .filter(a -> a.getStatus() == AppointmentStatus.AGENDADO || a.getStatus() == AppointmentStatus.PROPOSTA_REAGENDAMENTO)
+        List<Appointment> appointments = appointmentRepository.findByBarberIdAndDateOrderByStartTimeAsc(barberId, date)
+                .stream()
+                .filter(a -> a.getStatus() == AppointmentStatus.AGENDADO
+                        || a.getStatus() == AppointmentStatus.PROPOSTA_REAGENDAMENTO)
                 .collect(Collectors.toList());
 
         int totalDuration = serviceRepository.findAllById(serviceIds).stream()
                 .filter(s -> s.getBarber().getId().equals(barberId) && Boolean.TRUE.equals(s.getActive()))
                 .mapToInt(s -> s.getDurationMinutes() != null ? s.getDurationMinutes() : 60)
                 .sum();
-        
-        if (totalDuration == 0) return List.of();
 
-        List<LocalTime> availableSlots = new java.util.ArrayList<>();
+        if (totalDuration == 0)
+            return List.of();
+
+        java.util.TreeSet<LocalTime> availableSlots = new java.util.TreeSet<>();
         int interval = barber.getSlotIntervalMinutes() != null ? barber.getSlotIntervalMinutes() : 30;
         LocalTime now = LocalTime.now();
         LocalDate today = LocalDate.now();
 
         for (Availability av : availabilities) {
-            LocalTime current = av.getStartTime();
-            while (current.plusMinutes(totalDuration).isBefore(av.getEndTime()) || current.plusMinutes(totalDuration).equals(av.getEndTime())) {
-                
-                if (date.equals(today) && !current.isAfter(now)) {
-                    current = current.plusMinutes(interval);
-                    continue;
+            java.util.TreeSet<LocalTime> candidates = new java.util.TreeSet<>();
+            LocalTime cursor = av.getStartTime();
+            while (cursor.plusMinutes(totalDuration).compareTo(av.getEndTime()) <= 0) {
+                candidates.add(cursor);
+                cursor = cursor.plusMinutes(interval);
+            }
+            for (Appointment app : appointments) {
+                LocalTime after = app.getEndTime();
+                if (after.compareTo(av.getStartTime()) >= 0
+                        && after.plusMinutes(totalDuration).compareTo(av.getEndTime()) <= 0) {
+                    candidates.add(after);
                 }
+            }
+
+            for (LocalTime current : candidates) {
+                if (date.equals(today) && !current.isAfter(now))
+                    continue;
 
                 LocalTime slotEnd = current.plusMinutes(totalDuration);
                 final LocalTime finalCurrent = current;
-                
-                boolean hasOverlap = appointments.stream().anyMatch(app -> 
-                    (finalCurrent.isBefore(app.getEndTime()) && slotEnd.isAfter(app.getStartTime()))
-                );
 
-                if (!hasOverlap) {
-                    // Check if slot overlaps with break time
-                    boolean inBreak = false;
-                    if (av.getBreakStartTime() != null && av.getBreakEndTime() != null) {
-                        inBreak = finalCurrent.isBefore(av.getBreakEndTime()) && slotEnd.isAfter(av.getBreakStartTime());
-                    }
-                    if (!inBreak) {
-                        availableSlots.add(current);
-                    }
+                boolean hasOverlap = appointments.stream().anyMatch(
+                        app -> (finalCurrent.isBefore(app.getEndTime()) && slotEnd.isAfter(app.getStartTime())));
+                if (hasOverlap)
+                    continue;
+
+                boolean inBreak = false;
+                if (av.getBreakStartTime() != null && av.getBreakEndTime() != null) {
+                    inBreak = finalCurrent.isBefore(av.getBreakEndTime()) && slotEnd.isAfter(av.getBreakStartTime());
                 }
-                
-                current = current.plusMinutes(interval);
+                if (inBreak)
+                    continue;
+
+                availableSlots.add(current);
             }
         }
 
-        return availableSlots;
+        return new java.util.ArrayList<>(availableSlots);
     }
 }

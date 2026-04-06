@@ -44,4 +44,6 @@ public class UserResponse {
     private String profilePicture;
     @Schema(description = "Descrição/Bio do barbeiro")
     private String description;
+    @Schema(description = "Data da última atualização da descrição/bio")
+    private Instant descriptionUpdatedAt;
 }

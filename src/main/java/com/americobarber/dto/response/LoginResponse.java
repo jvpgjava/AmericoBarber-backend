@@ -36,4 +36,8 @@ public class LoginResponse {
     private Boolean isOwner;
     @Schema(description = "Foto de perfil do usuário, retornada em base64 ou URL")
     private String profilePicture;
+    @Schema(description = "Descrição/Bio do barbeiro")
+    private String description;
+    @Schema(description = "Data da última atualização da descrição/bio")
+    private java.time.Instant descriptionUpdatedAt;
 }

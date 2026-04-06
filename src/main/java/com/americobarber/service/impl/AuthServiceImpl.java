@@ -46,6 +46,8 @@ public class AuthServiceImpl implements AuthService {
                 .isBarber(Boolean.TRUE.equals(user.getIsBarber()))
                 .isOwner(Boolean.TRUE.equals(user.getIsOwner()))
                 .profilePicture(user.getProfilePicture())
+                .description(user.getDescription())
+                .descriptionUpdatedAt(user.getDescriptionUpdatedAt())
                 .build();
     }
 
@@ -91,6 +93,8 @@ public class AuthServiceImpl implements AuthService {
                 .isBarber(Boolean.TRUE.equals(user.getIsBarber()))
                 .isOwner(Boolean.TRUE.equals(user.getIsOwner()))
                 .profilePicture(user.getProfilePicture())
+                .description(user.getDescription())
+                .descriptionUpdatedAt(user.getDescriptionUpdatedAt())
                 .build();
     }
 }

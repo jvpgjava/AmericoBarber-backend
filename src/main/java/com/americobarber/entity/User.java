@@ -105,6 +105,9 @@ public class User {
     @Column(name = "description", length = 255)
     private String description;
 
+    @Column(name = "description_updated_at")
+    private Instant descriptionUpdatedAt;
+
     @jakarta.persistence.PrePersist
     protected void onCreate() {
         if (createdAt == null) {

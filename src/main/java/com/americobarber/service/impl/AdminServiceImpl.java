@@ -108,7 +108,12 @@ public class AdminServiceImpl implements AdminService {
             user.setAssignedBarber(barber);
         }
         if (request.getProfilePicture() != null) user.setProfilePicture(request.getProfilePicture());
-        if (request.getDescription() != null) user.setDescription(request.getDescription());
+        if (request.getDescription() != null) {
+            if (!request.getDescription().equals(user.getDescription())) {
+                user.setDescriptionUpdatedAt(java.time.Instant.now());
+            }
+            user.setDescription(request.getDescription());
+        }
         user = userRepository.save(user);
         return userMapper.toResponse(user);
     }

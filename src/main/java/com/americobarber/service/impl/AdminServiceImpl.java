@@ -2,12 +2,15 @@ package com.americobarber.service.impl;
 
 import com.americobarber.dto.request.AppointmentRequest;
 import com.americobarber.dto.request.CreateBarberRequest;
+import com.americobarber.dto.request.GalleryPhotoRequest;
 import com.americobarber.dto.request.ServiceRequest;
 import com.americobarber.dto.request.UserUpdateRequest;
 import com.americobarber.dto.response.AppointmentResponse;
+import com.americobarber.dto.response.GalleryPhotoResponse;
 import com.americobarber.dto.response.ServiceResponse;
 import com.americobarber.dto.response.UserResponse;
 import com.americobarber.entity.Appointment;
+import com.americobarber.entity.GalleryPhoto;
 import com.americobarber.entity.ServiceEntity;
 import com.americobarber.entity.User;
 import com.americobarber.enums.AppointmentStatus;
@@ -15,10 +18,12 @@ import com.americobarber.enums.UserRole;
 import com.americobarber.exception.BusinessException;
 import com.americobarber.exception.ResourceNotFoundException;
 import com.americobarber.mapper.AppointmentMapper;
+import com.americobarber.mapper.GalleryPhotoMapper;
 import com.americobarber.mapper.ServiceMapper;
 import com.americobarber.mapper.UserMapper;
 import com.americobarber.repository.AppointmentRepository;
 import com.americobarber.repository.BarberDateOffRepository;
+import com.americobarber.repository.GalleryPhotoRepository;
 import com.americobarber.repository.ServiceRepository;
 import com.americobarber.repository.UserRepository;
 import com.americobarber.service.AdminService;
@@ -40,9 +45,11 @@ public class AdminServiceImpl implements AdminService {
     private final ServiceRepository serviceRepository;
     private final AppointmentRepository appointmentRepository;
     private final BarberDateOffRepository barberDateOffRepository;
+    private final GalleryPhotoRepository galleryPhotoRepository;
     private final UserMapper userMapper;
     private final ServiceMapper serviceMapper;
     private final AppointmentMapper appointmentMapper;
+    private final GalleryPhotoMapper galleryPhotoMapper;
     private final PasswordEncoder passwordEncoder;
 
     @Override
@@ -271,5 +278,59 @@ public class AdminServiceImpl implements AdminService {
         return appointmentRepository.findAll().stream()
                 .map(appointmentMapper::toResponse)
                 .collect(Collectors.toList());
+    }
+
+    // ================= GALLERY =================
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<GalleryPhotoResponse> listGalleryPhotos() {
+        return galleryPhotoRepository.findAllByOrderByDisplayOrderAsc().stream()
+                .map(galleryPhotoMapper::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public GalleryPhotoResponse addGalleryPhoto(GalleryPhotoRequest request) {
+        GalleryPhoto photo = galleryPhotoMapper.toEntity(request);
+        if (photo.getDisplayOrder() == null) {
+            photo.setDisplayOrder(0);
+        }
+        photo = galleryPhotoRepository.save(photo);
+        return galleryPhotoMapper.toResponse(photo);
+    }
+
+    @Override
+    @Transactional
+    public GalleryPhotoResponse updateGalleryPhoto(Long id, GalleryPhotoRequest request) {
+        if (id == null || id <= 0) {
+            throw new BusinessException("ID da foto inválido");
+        }
+        GalleryPhoto photo = galleryPhotoRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("GalleryPhoto", id));
+        if (request.getImageData() != null && !request.getImageData().isBlank()) {
+            photo.setImageData(request.getImageData());
+        }
+        if (request.getTitle() != null) {
+            photo.setTitle(request.getTitle());
+        }
+        if (request.getDisplayOrder() != null) {
+            photo.setDisplayOrder(request.getDisplayOrder());
+        }
+        photo = galleryPhotoRepository.save(photo);
+        return galleryPhotoMapper.toResponse(photo);
+    }
+
+    @Override
+    @Transactional
+    public void deleteGalleryPhoto(Long id) {
+        if (id == null || id <= 0) {
+            throw new BusinessException("ID da foto inválido");
+        }
+        if (!galleryPhotoRepository.existsById(id)) {
+            throw new ResourceNotFoundException("GalleryPhoto", id);
+        }
+        galleryPhotoRepository.deleteById(id);
     }
 }

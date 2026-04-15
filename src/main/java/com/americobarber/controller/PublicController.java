@@ -1,8 +1,10 @@
 
 package com.americobarber.controller;
 
+import com.americobarber.dto.response.GalleryPhotoResponse;
 import com.americobarber.dto.response.ServiceResponse;
 import com.americobarber.dto.response.UserResponse;
+import com.americobarber.service.AdminService;
 import com.americobarber.service.ClientService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -21,6 +23,7 @@ import java.util.List;
 public class PublicController {
 
     private final ClientService clientService;
+    private final AdminService adminService;
 
     @Operation(summary = "Listar barbeiros públicos", description = "Retorna todos os barbeiros ativos para exibição sem login.")
     @GetMapping("/barbers")
@@ -38,5 +41,11 @@ public class PublicController {
         // Wait, ClientService has listServicesByBarber(barberId).
         // Let's check what ClientService provides.
         return ResponseEntity.ok(clientService.listServicesByBarber(null));
+    }
+
+    @Operation(summary = "Listar galeria pública", description = "Retorna todas as fotos da galeria ordenadas para exibição na landing page.")
+    @GetMapping("/gallery")
+    public ResponseEntity<List<GalleryPhotoResponse>> listPublicGallery() {
+        return ResponseEntity.ok(adminService.listGalleryPhotos());
     }
 }

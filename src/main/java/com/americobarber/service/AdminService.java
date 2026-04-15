@@ -2,9 +2,11 @@ package com.americobarber.service;
 
 import com.americobarber.dto.request.AppointmentRequest;
 import com.americobarber.dto.request.CreateBarberRequest;
+import com.americobarber.dto.request.GalleryPhotoRequest;
 import com.americobarber.dto.request.ServiceRequest;
 import com.americobarber.dto.request.UserUpdateRequest;
 import com.americobarber.dto.response.AppointmentResponse;
+import com.americobarber.dto.response.GalleryPhotoResponse;
 import com.americobarber.dto.response.ServiceResponse;
 import com.americobarber.dto.response.UserResponse;
 
@@ -29,4 +31,14 @@ public interface AdminService {
     List<ServiceResponse> listAllServices();
 
     List<AppointmentResponse> listAllAppointments();
+
+    // ================= GALLERY =================
+
+    List<GalleryPhotoResponse> listGalleryPhotos();
+
+    GalleryPhotoResponse addGalleryPhoto(GalleryPhotoRequest request);
+
+    GalleryPhotoResponse updateGalleryPhoto(Long id, GalleryPhotoRequest request);
+
+    void deleteGalleryPhoto(Long id);
 }

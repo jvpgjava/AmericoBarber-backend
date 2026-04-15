@@ -1,9 +1,11 @@
 package com.americobarber.controller;
 
 import com.americobarber.dto.request.CreateBarberRequest;
+import com.americobarber.dto.request.GalleryPhotoRequest;
 import com.americobarber.dto.request.ServiceRequest;
 import com.americobarber.dto.request.UserUpdateRequest;
 import com.americobarber.dto.response.AppointmentResponse;
+import com.americobarber.dto.response.GalleryPhotoResponse;
 import com.americobarber.dto.response.ServiceResponse;
 import com.americobarber.dto.response.UserResponse;
 import com.americobarber.service.AdminService;
@@ -161,5 +163,48 @@ public class AdminController {
     @GetMapping("/appointments")
     public ResponseEntity<List<AppointmentResponse>> listAllAppointments() {
         return ResponseEntity.ok(adminService.listAllAppointments());
+    }
+
+    // ================= GALLERY =================
+
+    @Operation(summary = "Listar fotos da galeria", description = "Retorna todas as fotos da galeria ordenadas por displayOrder.")
+    @ApiResponse(responseCode = "200", description = "Lista de fotos")
+    @GetMapping("/gallery")
+    public ResponseEntity<List<GalleryPhotoResponse>> listGalleryPhotos() {
+        return ResponseEntity.ok(adminService.listGalleryPhotos());
+    }
+
+    @Operation(summary = "Adicionar foto à galeria", description = "Adiciona nova foto (base64) à galeria de cortes.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "201", description = "Foto adicionada"),
+        @ApiResponse(responseCode = "403", description = "Sem permissão", content = @Content())
+    })
+    @PostMapping("/gallery")
+    public ResponseEntity<GalleryPhotoResponse> addGalleryPhoto(@Valid @RequestBody GalleryPhotoRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(adminService.addGalleryPhoto(request));
+    }
+
+    @Operation(summary = "Atualizar foto da galeria", description = "Atualiza imagem, título ou ordem de exibição.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Foto atualizada"),
+        @ApiResponse(responseCode = "404", description = "Foto não encontrada", content = @Content())
+    })
+    @PutMapping("/gallery/{id}")
+    public ResponseEntity<GalleryPhotoResponse> updateGalleryPhoto(
+            @Parameter(description = "ID da foto") @PathVariable Long id,
+            @Valid @RequestBody GalleryPhotoRequest request) {
+        return ResponseEntity.ok(adminService.updateGalleryPhoto(id, request));
+    }
+
+    @Operation(summary = "Excluir foto da galeria", description = "Remove permanentemente uma foto da galeria.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "204", description = "Foto excluída"),
+        @ApiResponse(responseCode = "404", description = "Foto não encontrada", content = @Content())
+    })
+    @DeleteMapping("/gallery/{id}")
+    public ResponseEntity<Void> deleteGalleryPhoto(
+            @Parameter(description = "ID da foto") @PathVariable Long id) {
+        adminService.deleteGalleryPhoto(id);
+        return ResponseEntity.noContent().build();
     }
 }

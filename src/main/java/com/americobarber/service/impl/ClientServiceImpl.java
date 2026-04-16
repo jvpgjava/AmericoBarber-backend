@@ -319,9 +319,9 @@ public class ClientServiceImpl implements ClientService {
             if (!withinWindow)
                 continue;
             boolean inBreak = false;
-            if (av.getBreakStartTime() != null && av.getBreakEndTime() != null) {
-                inBreak = request.getNewStartTime().isBefore(av.getBreakEndTime())
-                        && newEndTime.isAfter(av.getBreakStartTime());
+            if (av.getBreaks() != null && !av.getBreaks().isEmpty()) {
+                inBreak = av.getBreaks().stream().anyMatch(b -> request.getNewStartTime().isBefore(b.getEndTime())
+                        && newEndTime.isAfter(b.getStartTime()));
             }
             if (!inBreak) {
                 fitsInAvailability = true;
@@ -489,8 +489,8 @@ public class ClientServiceImpl implements ClientService {
                     continue;
 
                 boolean inBreak = false;
-                if (av.getBreakStartTime() != null && av.getBreakEndTime() != null) {
-                    inBreak = finalCurrent.isBefore(av.getBreakEndTime()) && slotEnd.isAfter(av.getBreakStartTime());
+                if (av.getBreaks() != null && !av.getBreaks().isEmpty()) {
+                    inBreak = av.getBreaks().stream().anyMatch(b -> finalCurrent.isBefore(b.getEndTime()) && slotEnd.isAfter(b.getStartTime()));
                 }
                 if (inBreak)
                     continue;

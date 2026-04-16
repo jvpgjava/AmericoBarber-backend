@@ -2,6 +2,8 @@ package com.americobarber.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -9,6 +11,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -46,9 +49,7 @@ public class Availability {
     @Column(name = "end_time", nullable = false)
     private LocalTime endTime;
 
-    @Column(name = "break_start_time")
-    private LocalTime breakStartTime;
-
-    @Column(name = "break_end_time")
-    private LocalTime breakEndTime;
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "availability_breaks", joinColumns = @JoinColumn(name = "availability_id"))
+    private List<BreakInterval> breaks;
 }

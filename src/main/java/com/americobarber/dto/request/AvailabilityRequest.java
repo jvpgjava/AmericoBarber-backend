@@ -11,6 +11,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalTime;
+import java.util.List;
 
 @Data
 @NoArgsConstructor
@@ -35,11 +36,6 @@ public class AvailabilityRequest {
     @JsonFormat(pattern = "HH:mm")
     private LocalTime endTime;
 
-    @Schema(description = "Início do intervalo/pausa (HH:mm), opcional", example = "12:00")
-    @JsonFormat(pattern = "HH:mm")
-    private LocalTime breakStartTime;
-
-    @Schema(description = "Fim do intervalo/pausa (HH:mm), opcional", example = "13:00")
-    @JsonFormat(pattern = "HH:mm")
-    private LocalTime breakEndTime;
+    @Schema(description = "Lista de intervalos/pausas do barbeiro")
+    private List<com.americobarber.dto.BreakIntervalDto> breaks;
 }

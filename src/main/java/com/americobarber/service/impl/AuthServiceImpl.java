@@ -16,15 +16,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.beans.factory.annotation.Value;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-import com.americobarber.entity.ConfirmationToken;
-import com.americobarber.repository.ConfirmationTokenRepository;
-import com.americobarber.service.EmailService;
 
 @Slf4j
 @Service
@@ -35,30 +26,13 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
-    private final ConfirmationTokenRepository confirmationTokenRepository;
-    private final EmailService emailService;
-
-    @Value("${app.frontend.url:http://localhost:5173}")
-    private String frontendUrl;
 
     @Override
     public LoginResponse login(LoginRequest request) {
-        User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new BusinessException("Usuário não encontrado"));
-
-        log.info("Tentativa de LOGIN: Email={}, Role={}, Verified={}", user.getEmail(), user.getRole(), user.getEmailVerified());
-
-        if (com.americobarber.enums.UserRole.ROLE_CLIENT.equals(user.getRole())) {
-            // Checagem rigorosa: emailVerified tem que ser TRUE
-            if (user.getEmailVerified() == null || !user.getEmailVerified()) {
-                log.warn("BLOQUEADO: E-mail não verificado para {}", user.getEmail());
-                throw new BusinessException("Por favor, confirme seu email antes de fazer login.");
-            }
-        }
-
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
-                
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new BusinessException("Usuário não encontrado"));
         String token = jwtUtil.generateToken(user.getEmail(), user.getId(), user.getRole());
         return LoginResponse.builder()
                 .token(token)
@@ -103,54 +77,24 @@ public class AuthServiceImpl implements AuthService {
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(request.getRole())
                 .active(true)
-                .emailVerified(false)
                 .build();
         user = userRepository.save(user);
-
-        // Gera token de confirmação
-        String tokenString = UUID.randomUUID().toString();
-        ConfirmationToken confirmationToken = ConfirmationToken.builder()
-                .token(tokenString)
-                .user(user)
-                .expiresAt(Instant.now().plus(24, ChronoUnit.HOURS))
-                .build();
-        confirmationTokenRepository.save(confirmationToken);
-
-        // Envia email de confirmação assíncrono
-        Map<String, Object> variables = new HashMap<>();
-        variables.put("name", user.getName());
-        variables.put("confirmationLink", frontendUrl + "/confirm-email?token=" + tokenString);
-        emailService.sendHtmlEmail(user.getEmail(), "Confirme seu E-mail - Américo Barber Club", "email-confirmation", variables);
-
-        log.info("User registered: id={}, email={}, verification email sent", user.getId(), user.getEmail());
-        
-        // Retornamos dados básicos, mas SEM token JWT para forçar login após confirmação
+        String token = jwtUtil.generateToken(user.getEmail(), user.getId(), user.getRole());
+        log.info("User registered: id={}", user.getId());
         return LoginResponse.builder()
-                .token(null) // Força o usuário a não estar logado imediatamente
+                .token(token)
+                .type("Bearer")
                 .userId(user.getId())
                 .name(user.getName())
                 .email(user.getEmail())
                 .cpf(user.getCpf())
                 .phone(user.getPhone())
                 .role(user.getRole())
+                .isBarber(Boolean.TRUE.equals(user.getIsBarber()))
+                .isOwner(Boolean.TRUE.equals(user.getIsOwner()))
+                .profilePicture(user.getProfilePicture())
+                .description(user.getDescription())
+                .descriptionUpdatedAt(user.getDescriptionUpdatedAt())
                 .build();
-    }
-
-    @Override
-    @Transactional
-    public void confirmEmail(String tokenString) {
-        ConfirmationToken token = confirmationTokenRepository.findByToken(tokenString)
-                .orElseThrow(() -> new BusinessException("Token inválido ou não encontrado."));
-
-        if (token.isExpired()) {
-            throw new BusinessException("Token expirado.");
-        }
-
-        User user = token.getUser();
-        user.setEmailVerified(true);
-        userRepository.save(user);
-
-        confirmationTokenRepository.delete(token);
-        log.info("Email verificado para o usuário: id={}", user.getId());
     }
 }

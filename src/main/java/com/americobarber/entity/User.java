@@ -64,10 +64,6 @@ public class User {
     @Builder.Default
     private Boolean active = true;
 
-    @Column(name = "email_verified", nullable = false)
-    @Builder.Default
-    private Boolean emailVerified = false;
-
     @Column(name = "is_barber", nullable = false)
     @Builder.Default
     private Boolean isBarber = false;

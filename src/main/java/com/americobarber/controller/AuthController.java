@@ -13,10 +13,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -47,16 +45,5 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<LoginResponse> register(@Valid @RequestBody RegisterRequest request) {
         return ResponseEntity.ok(authService.register(request));
-    }
-
-    @Operation(summary = "Confirmar Email", description = "Valida o token enviado para o email do usuário e confirma a conta.")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Email confirmado com sucesso"),
-        @ApiResponse(responseCode = "400", description = "Token inválido ou expirado", content = @Content())
-    })
-    @GetMapping("/confirm-email")
-    public ResponseEntity<Void> confirmEmail(@RequestParam("token") String token) {
-        authService.confirmEmail(token);
-        return ResponseEntity.ok().build();
     }
 }

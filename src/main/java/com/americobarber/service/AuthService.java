@@ -9,4 +9,6 @@ public interface AuthService {
     LoginResponse login(LoginRequest request);
 
     LoginResponse register(RegisterRequest request);
+
+    void confirmEmail(String token);
 }

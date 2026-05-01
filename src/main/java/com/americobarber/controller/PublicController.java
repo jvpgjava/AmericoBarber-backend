@@ -24,6 +24,7 @@ public class PublicController {
 
     private final ClientService clientService;
     private final AdminService adminService;
+    private final com.americobarber.repository.SystemConfigRepository systemConfigRepository;
 
     @Operation(summary = "Listar barbeiros públicos", description = "Retorna todos os barbeiros ativos para exibição sem login.")
     @GetMapping("/barbers")
@@ -47,5 +48,17 @@ public class PublicController {
     @GetMapping("/gallery")
     public ResponseEntity<List<GalleryPhotoResponse>> listPublicGallery() {
         return ResponseEntity.ok(adminService.listGalleryPhotos());
+    }
+
+    @Operation(summary = "Obter configuração pública", description = "Retorna valor de uma configuração pública como chave PIX.")
+    @GetMapping("/config/{key}")
+    public ResponseEntity<java.util.Map<String, String>> getPublicConfig(@org.springframework.web.bind.annotation.PathVariable String key) {
+        // Only allow certain public keys
+        if (!"PIX_KEY".equals(key)) {
+            return ResponseEntity.ok(java.util.Map.of("key", key, "value", ""));
+        }
+        return systemConfigRepository.findById(key)
+                .map(c -> ResponseEntity.ok(java.util.Map.of("key", c.getKey(), "value", c.getValue())))
+                .orElse(ResponseEntity.ok(java.util.Map.of("key", key, "value", "")));
     }
 }

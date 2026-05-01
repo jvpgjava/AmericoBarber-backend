@@ -33,6 +33,11 @@ public class AuthServiceImpl implements AuthService {
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new BusinessException("Usuário não encontrado"));
+
+        if (Boolean.TRUE.equals(user.getBlocked())) {
+            throw new BusinessException("Sua conta foi bloqueada. Entre em contato com a barbearia.");
+        }
+
         String token = jwtUtil.generateToken(user.getEmail(), user.getId(), user.getRole());
         return LoginResponse.builder()
                 .token(token)
@@ -48,6 +53,7 @@ public class AuthServiceImpl implements AuthService {
                 .profilePicture(user.getProfilePicture())
                 .description(user.getDescription())
                 .descriptionUpdatedAt(user.getDescriptionUpdatedAt())
+                .blocked(Boolean.TRUE.equals(user.getBlocked()))
                 .build();
     }
 
@@ -95,6 +101,7 @@ public class AuthServiceImpl implements AuthService {
                 .profilePicture(user.getProfilePicture())
                 .description(user.getDescription())
                 .descriptionUpdatedAt(user.getDescriptionUpdatedAt())
+                .blocked(false)
                 .build();
     }
 }

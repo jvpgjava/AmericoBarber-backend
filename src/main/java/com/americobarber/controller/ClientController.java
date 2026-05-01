@@ -6,6 +6,7 @@ import com.americobarber.dto.request.RescheduleRequest;
 import com.americobarber.dto.response.AppointmentResponse;
 import com.americobarber.dto.response.ServiceResponse;
 import com.americobarber.dto.response.UserResponse;
+import com.americobarber.service.CancellationPenaltyService;
 import com.americobarber.service.ClientService;
 import com.americobarber.util.JwtUtil;
 import io.swagger.v3.oas.annotations.Operation;
@@ -34,6 +35,7 @@ public class ClientController {
 
     private final ClientService clientService;
     private final JwtUtil jwtUtil;
+    private final CancellationPenaltyService cancellationPenaltyService;
 
     @Operation(summary = "Meu perfil", description = "Retorna dados do cliente autentado (ID extraído do JWT).")
     @ApiResponse(responseCode = "200", description = "Dados do usuário")
@@ -69,11 +71,11 @@ public class ClientController {
         return ResponseEntity.ok(clientService.myHistory(clientId));
     }
 
-    @Operation(summary = "Criar agendamento", description = "Cria novo agendamento. Valida: serviço ativo, sem double booking, cliente não pode ter dois no mesmo horário. clientId no body deve ser o mesmo do JWT.")
+    @Operation(summary = "Criar agendamento", description = "Cria novo agendamento.")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "201", description = "Agendamento criado"),
-        @ApiResponse(responseCode = "422", description = "Regra de negócio (horário ocupado, serviço inativo, etc.)", content = @Content()),
-        @ApiResponse(responseCode = "404", description = "Cliente, barbeiro ou serviço não encontrado", content = @Content()),
+        @ApiResponse(responseCode = "422", description = "Regra de negócio", content = @Content()),
+        @ApiResponse(responseCode = "404", description = "Não encontrado", content = @Content()),
         @ApiResponse(responseCode = "403", description = "Sem permissão", content = @Content())
     })
     @PostMapping("/appointments")
@@ -84,12 +86,11 @@ public class ClientController {
         return ResponseEntity.status(HttpStatus.CREATED).body(clientService.createAppointment(clientId, body));
     }
 
-    @Operation(summary = "Cancelar agendamento", description = "Altera status para CANCELADO_POR_CLIENTE. Observação opcional no body.")
+    @Operation(summary = "Cancelar agendamento", description = "Altera status para CANCELADO_POR_CLIENTE. Se faltam <12h, gera multa.")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "204", description = "Cancelado com sucesso"),
-        @ApiResponse(responseCode = "422", description = "Agendamento não é do cliente ou já está cancelado/finalizado", content = @Content()),
-        @ApiResponse(responseCode = "404", description = "Agendamento não encontrado", content = @Content()),
-        @ApiResponse(responseCode = "403", description = "Sem permissão", content = @Content())
+        @ApiResponse(responseCode = "422", description = "Agendamento não é do cliente ou já cancelado", content = @Content()),
+        @ApiResponse(responseCode = "404", description = "Agendamento não encontrado", content = @Content())
     })
     @DeleteMapping("/appointments/{id}")
     public ResponseEntity<Void> cancelAppointment(
@@ -102,96 +103,90 @@ public class ClientController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Aceitar proposta de reagendamento", description = "Aceita a proposta do barbeiro e atualiza data/hora do agendamento.")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Agendamento atualizado"),
-        @ApiResponse(responseCode = "422", description = "Sem proposta pendente", content = @Content()),
-        @ApiResponse(responseCode = "404", description = "Agendamento não encontrado", content = @Content())
-    })
+    @Operation(summary = "Aceitar proposta de reagendamento")
     @PutMapping("/appointments/{id}/accept-proposal")
     public ResponseEntity<AppointmentResponse> acceptProposal(
             HttpServletRequest request,
-            @Parameter(description = "ID do agendamento") @PathVariable Long id) {
+            @PathVariable Long id) {
         Long clientId = getUserId(request);
         return ResponseEntity.ok(clientService.acceptProposal(clientId, id));
     }
 
-    @Operation(summary = "Rejeitar proposta de reagendamento", description = "Rejeita a proposta e cancela o agendamento (CANCELADO_POR_CLIENTE).")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "204", description = "Proposta rejeitada"),
-        @ApiResponse(responseCode = "422", description = "Sem proposta pendente", content = @Content()),
-        @ApiResponse(responseCode = "404", description = "Agendamento não encontrado", content = @Content())
-    })
+    @Operation(summary = "Rejeitar proposta de reagendamento")
     @PutMapping("/appointments/{id}/reject-proposal")
     public ResponseEntity<Void> rejectProposal(
             HttpServletRequest request,
-            @Parameter(description = "ID do agendamento") @PathVariable Long id) {
+            @PathVariable Long id) {
         Long clientId = getUserId(request);
         clientService.rejectProposal(clientId, id);
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Reagendar", description = "Altera data/hora do agendamento. Observação opcional.")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Agendamento reagendado"),
-        @ApiResponse(responseCode = "422", description = "Horário ocupado ou agendamento inválido", content = @Content()),
-        @ApiResponse(responseCode = "404", description = "Agendamento não encontrado", content = @Content())
-    })
+    @Operation(summary = "Reagendar")
     @PutMapping("/appointments/{id}/reschedule")
     public ResponseEntity<AppointmentResponse> reschedule(
             HttpServletRequest request,
-            @Parameter(description = "ID do agendamento") @PathVariable Long id,
+            @PathVariable Long id,
             @Valid @RequestBody RescheduleRequest body) {
         Long clientId = getUserId(request);
         return ResponseEntity.ok(clientService.reschedule(clientId, id, body));
     }
 
-    @Operation(summary = "Listar barbeiros", description = "Se o cliente tem barbeiro vinculado, retorna só ele; senão, todos os barbeiros ativos.")
-    @ApiResponse(responseCode = "200", description = "Lista de barbeiros")
+    @Operation(summary = "Listar barbeiros")
     @GetMapping("/barbers")
     public ResponseEntity<List<UserResponse>> listBarbers(HttpServletRequest request) {
         Long clientId = getUserId(request);
         return ResponseEntity.ok(clientService.listBarbers(clientId));
     }
 
-    @Operation(summary = "Serviços do barbeiro", description = "Lista serviços ativos de um barbeiro (para montar o formulário de agendamento).")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Lista de serviços"),
-        @ApiResponse(responseCode = "404", description = "Barbeiro não encontrado", content = @Content())
-    })
+    @Operation(summary = "Serviços do barbeiro")
     @GetMapping("/barbers/{barberId}/services")
-    public ResponseEntity<List<ServiceResponse>> listServicesByBarber(
-            @Parameter(description = "ID do barbeiro") @PathVariable Long barberId) {
+    public ResponseEntity<List<ServiceResponse>> listServicesByBarber(@PathVariable Long barberId) {
         return ResponseEntity.ok(clientService.listServicesByBarber(barberId));
     }
 
-    @Operation(summary = "Disponibilidade semanal do barbeiro", description = "Retorna os dias e horários em que o barbeiro atende (para o calendário do cliente).")
+    @Operation(summary = "Disponibilidade semanal do barbeiro")
     @GetMapping("/barbers/{barberId}/availability")
     public ResponseEntity<List<com.americobarber.dto.response.AvailabilityResponse>> getBarberAvailability(
-            @Parameter(description = "ID do barbeiro") @PathVariable Long barberId) {
+            @PathVariable Long barberId) {
         return ResponseEntity.ok(clientService.getBarberAvailability(barberId));
     }
 
-    @Operation(summary = "Dias de folga do barbeiro", description = "Datas em que o barbeiro não atende (para o calendário do cliente). Se cliente tem barbeiro vinculado, só pode consultar o seu.")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Lista de datas"),
-        @ApiResponse(responseCode = "422", description = "Cliente vinculado a outro barbeiro", content = @Content())
-    })
+    @Operation(summary = "Dias de folga do barbeiro")
     @GetMapping("/barbers/{barberId}/date-off")
     public ResponseEntity<List<LocalDate>> getBarberDateOff(
             HttpServletRequest request,
-            @Parameter(description = "ID do barbeiro") @PathVariable Long barberId) {
+            @PathVariable Long barberId) {
         Long clientId = getUserId(request);
         return ResponseEntity.ok(clientService.getBarberDateOff(clientId, barberId));
     }
 
-    @Operation(summary = "Horários disponíveis", description = "Calcula horários disponíveis para um barbeiro em uma data específica considerando serviços escolhidos.")
+    @Operation(summary = "Horários disponíveis")
     @GetMapping("/barbers/{barberId}/available-times")
     public ResponseEntity<List<java.time.LocalTime>> getAvailableTimes(
             @PathVariable Long barberId,
             @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam List<Long> serviceIds) {
         return ResponseEntity.ok(clientService.getAvailableTimes(barberId, date, serviceIds));
+    }
+
+    // ================= CANCELLATION PENALTIES =================
+
+    @Operation(summary = "Penalidade pendente", description = "Retorna a penalidade de cancelamento ativa do cliente (PENDING ou AWAITING_REVIEW), se existir.")
+    @GetMapping("/penalties/pending")
+    public ResponseEntity<com.americobarber.dto.response.CancellationPenaltyResponse> getPendingPenalty(HttpServletRequest request) {
+        Long clientId = getUserId(request);
+        return ResponseEntity.ok(cancellationPenaltyService.getActivePenalty(clientId));
+    }
+
+    @Operation(summary = "Enviar comprovante", description = "Envia comprovante de pagamento (base64) para uma penalidade pendente.")
+    @PostMapping("/penalties/{id}/proof")
+    public ResponseEntity<com.americobarber.dto.response.CancellationPenaltyResponse> submitProof(
+            HttpServletRequest request,
+            @PathVariable Long id,
+            @Valid @RequestBody com.americobarber.dto.request.PenaltyProofRequest body) {
+        Long clientId = getUserId(request);
+        return ResponseEntity.ok(cancellationPenaltyService.submitProof(clientId, id, body.getProofImageData()));
     }
 
     private Long getUserId(HttpServletRequest request) {

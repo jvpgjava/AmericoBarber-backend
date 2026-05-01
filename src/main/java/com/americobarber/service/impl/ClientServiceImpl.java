@@ -3,6 +3,7 @@ package com.americobarber.service.impl;
 import com.americobarber.dto.request.AppointmentRequest;
 import com.americobarber.dto.response.AppointmentResponse;
 import com.americobarber.entity.Appointment;
+import com.americobarber.entity.CancellationPenalty;
 import com.americobarber.dto.response.ServiceResponse;
 import com.americobarber.dto.response.UserResponse;
 import com.americobarber.entity.Availability;
@@ -10,6 +11,7 @@ import com.americobarber.entity.BarberDateOff;
 import com.americobarber.entity.ServiceEntity;
 import com.americobarber.entity.User;
 import com.americobarber.enums.AppointmentStatus;
+import com.americobarber.enums.CancellationPenaltyStatus;
 import com.americobarber.exception.BusinessException;
 import com.americobarber.exception.ResourceNotFoundException;
 import com.americobarber.mapper.AppointmentMapper;
@@ -19,6 +21,7 @@ import com.americobarber.mapper.UserMapper;
 import com.americobarber.repository.AppointmentRepository;
 import com.americobarber.repository.AvailabilityRepository;
 import com.americobarber.repository.BarberDateOffRepository;
+import com.americobarber.repository.CancellationPenaltyRepository;
 import com.americobarber.repository.ServiceRepository;
 import com.americobarber.repository.UserRepository;
 import com.americobarber.service.ClientService;
@@ -28,7 +31,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -41,6 +46,7 @@ public class ClientServiceImpl implements ClientService {
     private final AppointmentRepository appointmentRepository;
     private final BarberDateOffRepository barberDateOffRepository;
     private final AvailabilityRepository availabilityRepository;
+    private final CancellationPenaltyRepository cancellationPenaltyRepository;
     private final UserMapper userMapper;
     private final ServiceMapper serviceMapper;
     private final AppointmentMapper appointmentMapper;
@@ -205,9 +211,27 @@ public class ClientServiceImpl implements ClientService {
                 && appointment.getStatus() != AppointmentStatus.PROPOSTA_REAGENDAMENTO) {
             throw new BusinessException("Apenas agendamentos ativos ou com proposta pendente podem ser cancelados");
         }
+
+        // Verificar regra de 12 horas — cancelamento tardio gera multa
+        LocalDateTime appointmentDateTime = LocalDateTime.of(appointment.getDate(), appointment.getStartTime());
+        long hoursUntilAppointment = ChronoUnit.HOURS.between(LocalDateTime.now(), appointmentDateTime);
+
         appointment.setStatus(AppointmentStatus.CANCELADO_POR_CLIENTE);
         appointment.setObservation(observation);
         appointmentRepository.save(appointment);
+
+        if (hoursUntilAppointment < 12 && appointment.getTotalPrice() != null
+                && appointment.getTotalPrice().compareTo(java.math.BigDecimal.ZERO) > 0
+                && !cancellationPenaltyRepository.existsByAppointmentId(appointmentId)) {
+            CancellationPenalty penalty = CancellationPenalty.builder()
+                    .client(appointment.getClient())
+                    .appointment(appointment)
+                    .amount(appointment.getTotalPrice())
+                    .status(CancellationPenaltyStatus.PENDING)
+                    .build();
+            cancellationPenaltyRepository.save(penalty);
+        }
+
         sseService.broadcast("APPOINTMENT_UPDATE", appointment.getId());
     }
 

@@ -46,4 +46,6 @@ public class UserResponse {
     private String description;
     @Schema(description = "Data da última atualização da descrição/bio")
     private Instant descriptionUpdatedAt;
+    @Schema(description = "Indica se o cliente está bloqueado")
+    private Boolean blocked;
 }

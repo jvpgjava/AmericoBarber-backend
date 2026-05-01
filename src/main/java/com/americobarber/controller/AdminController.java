@@ -9,12 +9,11 @@ import com.americobarber.dto.response.GalleryPhotoResponse;
 import com.americobarber.dto.response.ServiceResponse;
 import com.americobarber.dto.response.UserResponse;
 import com.americobarber.service.AdminService;
+import com.americobarber.service.CancellationPenaltyService;
+import com.americobarber.util.JwtUtil;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.responses.ApiResponse;
-import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -27,139 +26,111 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/admin")
 @PreAuthorize("hasRole('ADMIN')")
-@Tag(name = "Admin", description = "Gestão por administrador. Requer ROLE_ADMIN (Bearer JWT). Barbeiros são admins com isBarber=true criados via POST /barbers.")
+@Tag(name = "Admin", description = "Gestão por administrador. Requer ROLE_ADMIN.")
 @RequiredArgsConstructor
 public class AdminController {
 
     private final AdminService adminService;
     private final com.americobarber.service.BarberService barberService;
+    private final CancellationPenaltyService cancellationPenaltyService;
+    private final JwtUtil jwtUtil;
+    private final com.americobarber.repository.SystemConfigRepository systemConfigRepository;
 
-    @Operation(summary = "Obter disponibilidade de um barbeiro", description = "Retorna os horários de atendimento configurados por dia da semana para um barbeiro específico.")
-    @ApiResponse(responseCode = "200", description = "Lista de disponibilidades")
+    // ================= AVAILABILITY =================
+
+    @Operation(summary = "Obter disponibilidade de um barbeiro")
     @GetMapping("/barbers/{barberId}/availability")
     public ResponseEntity<List<com.americobarber.dto.response.AvailabilityResponse>> getBarberAvailability(
-            @Parameter(description = "ID do barbeiro") @PathVariable Long barberId) {
+            @PathVariable Long barberId) {
         return ResponseEntity.ok(barberService.getAvailability(barberId));
     }
 
-    @Operation(summary = "Definir disponibilidade de um barbeiro", description = "Substitui toda a disponibilidade de um barbeiro específico.")
-    @ApiResponse(responseCode = "200", description = "Disponibilidade atualizada")
+    @Operation(summary = "Definir disponibilidade de um barbeiro")
     @PutMapping("/barbers/{barberId}/availability")
     public ResponseEntity<List<com.americobarber.dto.response.AvailabilityResponse>> setBarberAvailability(
-            @Parameter(description = "ID do barbeiro") @PathVariable Long barberId,
+            @PathVariable Long barberId,
             @Valid @RequestBody List<com.americobarber.dto.request.AvailabilityRequest> body) {
         return ResponseEntity.ok(barberService.setAvailability(barberId, body));
     }
 
-    @Operation(summary = "Obter dias de folga de um barbeiro", description = "Retorna as datas em que o barbeiro específico não atende.")
-    @ApiResponse(responseCode = "200", description = "Lista de datas")
+    @Operation(summary = "Obter dias de folga de um barbeiro")
     @GetMapping("/barbers/{barberId}/date-off")
-    public ResponseEntity<List<java.time.LocalDate>> getBarberDateOff(
-            @Parameter(description = "ID do barbeiro") @PathVariable Long barberId) {
+    public ResponseEntity<List<java.time.LocalDate>> getBarberDateOff(@PathVariable Long barberId) {
         return ResponseEntity.ok(barberService.getDateOff(barberId));
     }
 
-    @Operation(summary = "Definir dias de folga de um barbeiro", description = "Substitui a lista de datas em que o barbeiro específico não atende.")
-    @ApiResponse(responseCode = "200", description = "Lista atualizada de datas")
+    @Operation(summary = "Definir dias de folga de um barbeiro")
     @PutMapping("/barbers/{barberId}/date-off")
     public ResponseEntity<List<java.time.LocalDate>> setBarberDateOff(
-            @Parameter(description = "ID do barbeiro") @PathVariable Long barberId,
+            @PathVariable Long barberId,
             @Valid @RequestBody com.americobarber.dto.request.BarberDateOffRequest body) {
         return ResponseEntity.ok(barberService.setDateOff(barberId, body));
     }
 
-    @Operation(summary = "Atualizar intervalo da grade de um barbeiro", description = "Define o intervalo em minutos para a grade de horários de um barbeiro específico.")
-    @ApiResponse(responseCode = "200", description = "Perfil atualizado")
+    @Operation(summary = "Atualizar intervalo da grade de um barbeiro")
     @PutMapping("/barbers/{barberId}/slot-interval")
     public ResponseEntity<UserResponse> updateBarberSlotInterval(
-            @Parameter(description = "ID do barbeiro") @PathVariable Long barberId,
+            @PathVariable Long barberId,
             @Valid @RequestBody com.americobarber.dto.request.SlotIntervalRequest body) {
         return ResponseEntity.ok(barberService.updateSlotInterval(barberId, body));
     }
 
-    @Operation(summary = "Criar barbeiro", description = "Cadastra novo admin barbeiro (role ADMIN + isBarber). Cada um vê só seus clientes/serviços/agendamentos.")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "201", description = "Barbeiro criado"),
-        @ApiResponse(responseCode = "422", description = "Email/CPF/telefone já existente", content = @Content()),
-        @ApiResponse(responseCode = "403", description = "Sem permissão", content = @Content())
-    })
+    // ================= BARBERS =================
+
+    @Operation(summary = "Criar barbeiro")
     @PostMapping("/barbers")
     public ResponseEntity<UserResponse> createBarber(@Valid @RequestBody CreateBarberRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(adminService.createBarber(request));
     }
 
-    @Operation(summary = "Atualizar usuário", description = "Atualiza nome, email, telefone, senha ou ativo por ID.")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Usuário atualizado"),
-        @ApiResponse(responseCode = "404", description = "Usuário não encontrado", content = @Content()),
-        @ApiResponse(responseCode = "403", description = "Sem permissão", content = @Content())
-    })
+    @Operation(summary = "Atualizar usuário")
     @PutMapping("/users/{id}")
-    public ResponseEntity<UserResponse> updateUser(
-            @Parameter(description = "ID do usuário") @PathVariable Long id,
-            @Valid @RequestBody UserUpdateRequest request) {
+    public ResponseEntity<UserResponse> updateUser(@PathVariable Long id, @Valid @RequestBody UserUpdateRequest request) {
         return ResponseEntity.ok(adminService.updateUser(id, request));
     }
 
-    @Operation(summary = "Listar barbeiros", description = "Retorna admins que são barbeiros (isBarber=true).")
-    @ApiResponse(responseCode = "200", description = "Lista de barbeiros")
+    @Operation(summary = "Listar barbeiros")
     @GetMapping("/barbers")
     public ResponseEntity<List<UserResponse>> listBarbers() {
         return ResponseEntity.ok(adminService.listBarbers());
     }
 
-    @Operation(summary = "Criar agendamento para cliente", description = "Cria agendamento em nome de um cliente. Admin não precisa ser o cliente.")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "201", description = "Agendamento criado"),
-        @ApiResponse(responseCode = "422", description = "Regra de negócio (horário ocupado, serviço inativo, etc.)", content = @Content()),
-        @ApiResponse(responseCode = "404", description = "Cliente, barbeiro ou serviço não encontrado", content = @Content())
-    })
+    // ================= APPOINTMENTS =================
+
+    @Operation(summary = "Criar agendamento para cliente")
     @PostMapping("/appointments")
     public ResponseEntity<AppointmentResponse> createAppointmentForClient(
             @Valid @RequestBody com.americobarber.dto.request.AppointmentRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(adminService.createAppointmentForClient(request));
     }
 
-    @Operation(summary = "Listar clientes", description = "Retorna todos os usuários com role ROLE_CLIENT.")
-    @ApiResponse(responseCode = "200", description = "Lista de clientes")
+    @Operation(summary = "Listar clientes")
     @GetMapping("/clients")
     public ResponseEntity<List<UserResponse>> listClients() {
         return ResponseEntity.ok(adminService.listClients());
     }
 
-    @Operation(summary = "Criar serviço", description = "Cadastra serviço vinculado a um barbeiro. Apenas admin.")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "201", description = "Serviço criado"),
-        @ApiResponse(responseCode = "404", description = "Barbeiro não encontrado", content = @Content()),
-        @ApiResponse(responseCode = "403", description = "Sem permissão", content = @Content())
-    })
+    // ================= SERVICES =================
+
+    @Operation(summary = "Criar serviço")
     @PostMapping("/services")
     public ResponseEntity<ServiceResponse> createService(@Valid @RequestBody ServiceRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(adminService.createService(request));
     }
 
-    @Operation(summary = "Atualizar serviço", description = "Atualiza nome, preço, duração, descrição, ativo ou barbeiro do serviço.")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Serviço atualizado"),
-        @ApiResponse(responseCode = "404", description = "Serviço ou barbeiro não encontrado", content = @Content()),
-        @ApiResponse(responseCode = "403", description = "Sem permissão", content = @Content())
-    })
+    @Operation(summary = "Atualizar serviço")
     @PutMapping("/services/{id}")
-    public ResponseEntity<ServiceResponse> updateService(
-            @Parameter(description = "ID do serviço") @PathVariable Long id,
-            @Valid @RequestBody ServiceRequest request) {
+    public ResponseEntity<ServiceResponse> updateService(@PathVariable Long id, @Valid @RequestBody ServiceRequest request) {
         return ResponseEntity.ok(adminService.updateService(id, request));
     }
 
-    @Operation(summary = "Listar todos os serviços", description = "Retorna todos os serviços, de todos os barbeiros.")
-    @ApiResponse(responseCode = "200", description = "Lista de serviços")
+    @Operation(summary = "Listar todos os serviços")
     @GetMapping("/services")
     public ResponseEntity<List<ServiceResponse>> listAllServices() {
         return ResponseEntity.ok(adminService.listAllServices());
     }
 
-    @Operation(summary = "Listar todos os agendamentos", description = "Retorna todos os agendamentos do sistema.")
-    @ApiResponse(responseCode = "200", description = "Lista de agendamentos")
+    @Operation(summary = "Listar todos os agendamentos")
     @GetMapping("/appointments")
     public ResponseEntity<List<AppointmentResponse>> listAllAppointments() {
         return ResponseEntity.ok(adminService.listAllAppointments());
@@ -167,44 +138,99 @@ public class AdminController {
 
     // ================= GALLERY =================
 
-    @Operation(summary = "Listar fotos da galeria", description = "Retorna todas as fotos da galeria ordenadas por displayOrder.")
-    @ApiResponse(responseCode = "200", description = "Lista de fotos")
+    @Operation(summary = "Listar fotos da galeria")
     @GetMapping("/gallery")
     public ResponseEntity<List<GalleryPhotoResponse>> listGalleryPhotos() {
         return ResponseEntity.ok(adminService.listGalleryPhotos());
     }
 
-    @Operation(summary = "Adicionar foto à galeria", description = "Adiciona nova foto (base64) à galeria de cortes.")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "201", description = "Foto adicionada"),
-        @ApiResponse(responseCode = "403", description = "Sem permissão", content = @Content())
-    })
+    @Operation(summary = "Adicionar foto à galeria")
     @PostMapping("/gallery")
     public ResponseEntity<GalleryPhotoResponse> addGalleryPhoto(@Valid @RequestBody GalleryPhotoRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED).body(adminService.addGalleryPhoto(request));
     }
 
-    @Operation(summary = "Atualizar foto da galeria", description = "Atualiza imagem, título ou ordem de exibição.")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "200", description = "Foto atualizada"),
-        @ApiResponse(responseCode = "404", description = "Foto não encontrada", content = @Content())
-    })
+    @Operation(summary = "Atualizar foto da galeria")
     @PutMapping("/gallery/{id}")
-    public ResponseEntity<GalleryPhotoResponse> updateGalleryPhoto(
-            @Parameter(description = "ID da foto") @PathVariable Long id,
-            @Valid @RequestBody GalleryPhotoRequest request) {
+    public ResponseEntity<GalleryPhotoResponse> updateGalleryPhoto(@PathVariable Long id, @Valid @RequestBody GalleryPhotoRequest request) {
         return ResponseEntity.ok(adminService.updateGalleryPhoto(id, request));
     }
 
-    @Operation(summary = "Excluir foto da galeria", description = "Remove permanentemente uma foto da galeria.")
-    @ApiResponses(value = {
-        @ApiResponse(responseCode = "204", description = "Foto excluída"),
-        @ApiResponse(responseCode = "404", description = "Foto não encontrada", content = @Content())
-    })
+    @Operation(summary = "Excluir foto da galeria")
     @DeleteMapping("/gallery/{id}")
-    public ResponseEntity<Void> deleteGalleryPhoto(
-            @Parameter(description = "ID da foto") @PathVariable Long id) {
+    public ResponseEntity<Void> deleteGalleryPhoto(@PathVariable Long id) {
         adminService.deleteGalleryPhoto(id);
         return ResponseEntity.noContent().build();
+    }
+
+    // ================= CANCELLATION PENALTIES =================
+
+    @Operation(summary = "Listar penalidades de cancelamento", description = "Retorna todas as penalidades. Filtro opcional por status.")
+    @GetMapping("/penalties")
+    public ResponseEntity<List<com.americobarber.dto.response.CancellationPenaltyResponse>> listPenalties(
+            @RequestParam(required = false) com.americobarber.enums.CancellationPenaltyStatus status) {
+        if (status != null) {
+            return ResponseEntity.ok(cancellationPenaltyService.listByStatus(status));
+        }
+        return ResponseEntity.ok(cancellationPenaltyService.listAll());
+    }
+
+    @Operation(summary = "Confirmar pagamento de penalidade")
+    @PutMapping("/penalties/{id}/confirm")
+    public ResponseEntity<com.americobarber.dto.response.CancellationPenaltyResponse> confirmPenalty(
+            HttpServletRequest request, @PathVariable Long id) {
+        Long adminId = getAdminId(request);
+        return ResponseEntity.ok(cancellationPenaltyService.confirmPenalty(adminId, id));
+    }
+
+    @Operation(summary = "Rejeitar pagamento de penalidade")
+    @PutMapping("/penalties/{id}/reject")
+    public ResponseEntity<com.americobarber.dto.response.CancellationPenaltyResponse> rejectPenalty(
+            HttpServletRequest request, @PathVariable Long id) {
+        Long adminId = getAdminId(request);
+        return ResponseEntity.ok(cancellationPenaltyService.rejectPenalty(adminId, id));
+    }
+
+    @Operation(summary = "Bloquear cliente")
+    @PutMapping("/clients/{clientId}/block")
+    public ResponseEntity<Void> blockClient(@PathVariable Long clientId) {
+        cancellationPenaltyService.blockClient(clientId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Desbloquear cliente")
+    @PutMapping("/clients/{clientId}/unblock")
+    public ResponseEntity<Void> unblockClient(@PathVariable Long clientId) {
+        cancellationPenaltyService.unblockClient(clientId);
+        return ResponseEntity.noContent().build();
+    }
+
+    // ================= SYSTEM CONFIG =================
+
+    @Operation(summary = "Obter configuração do sistema", description = "Retorna o valor de uma configuração pelo nome da chave (ex: PIX_KEY).")
+    @GetMapping("/config/{key}")
+    public ResponseEntity<java.util.Map<String, String>> getConfig(@PathVariable String key) {
+        return systemConfigRepository.findById(key)
+                .map(c -> ResponseEntity.ok(java.util.Map.of("key", c.getKey(), "value", c.getValue())))
+                .orElse(ResponseEntity.ok(java.util.Map.of("key", key, "value", "")));
+    }
+
+    @Operation(summary = "Salvar configuração do sistema", description = "Cria ou atualiza uma configuração do sistema (ex: PIX_KEY).")
+    @PutMapping("/config/{key}")
+    public ResponseEntity<java.util.Map<String, String>> setConfig(
+            @PathVariable String key,
+            @RequestBody java.util.Map<String, String> body) {
+        String value = body.getOrDefault("value", "");
+        com.americobarber.entity.SystemConfig config = systemConfigRepository.findById(key)
+                .orElse(com.americobarber.entity.SystemConfig.builder().key(key).build());
+        config.setValue(value);
+        systemConfigRepository.save(config);
+        return ResponseEntity.ok(java.util.Map.of("key", key, "value", value));
+    }
+
+    private Long getAdminId(HttpServletRequest request) {
+        String auth = request.getHeader("Authorization");
+        String token = auth != null && auth.startsWith("Bearer ") ? auth.substring(7) : "";
+        return jwtUtil.getUserIdFromToken(token);
     }
 }

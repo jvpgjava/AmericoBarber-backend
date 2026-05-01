@@ -72,6 +72,10 @@ public class User {
     @Builder.Default
     private Boolean isOwner = false;
 
+    @Column(nullable = false)
+    @Builder.Default
+    private Boolean blocked = false;
+
     @Column(nullable = false, updatable = false)
     private Instant createdAt;
 

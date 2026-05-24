@@ -21,6 +21,7 @@ import com.americobarber.repository.AvailabilityRepository;
 import com.americobarber.repository.BarberDateOffRepository;
 import com.americobarber.repository.ServiceRepository;
 import com.americobarber.repository.UserRepository;
+import com.americobarber.service.CancellationPenaltyService;
 import com.americobarber.service.ClientService;
 import com.americobarber.service.SseService;
 import lombok.RequiredArgsConstructor;
@@ -46,6 +47,7 @@ public class ClientServiceImpl implements ClientService {
     private final AppointmentMapper appointmentMapper;
     private final AvailabilityMapper availabilityMapper;
     private final SseService sseService;
+    private final CancellationPenaltyService cancellationPenaltyService;
 
     @Override
     @Transactional(readOnly = true)
@@ -108,6 +110,10 @@ public class ClientServiceImpl implements ClientService {
         }
         if (!clientId.equals(request.getClientId())) {
             throw new BusinessException("Cliente não autorizado");
+        }
+
+        if (cancellationPenaltyService.isClientBlocked(clientId)) {
+            throw new BusinessException("Pagamento pendente. Regularize sua situação para agendar novamente.");
         }
 
         User client = userRepository.findById(request.getClientId())
@@ -205,9 +211,18 @@ public class ClientServiceImpl implements ClientService {
                 && appointment.getStatus() != AppointmentStatus.PROPOSTA_REAGENDAMENTO) {
             throw new BusinessException("Apenas agendamentos ativos ou com proposta pendente podem ser cancelados");
         }
+
+        boolean lateCancellation = cancellationPenaltyService.isLateCancellation(appointment);
+        User client = appointment.getClient();
+
         appointment.setStatus(AppointmentStatus.CANCELADO_POR_CLIENTE);
         appointment.setObservation(observation);
         appointmentRepository.save(appointment);
+
+        if (lateCancellation) {
+            cancellationPenaltyService.createPenaltyForLateCancellation(client, appointment);
+        }
+
         sseService.broadcast("APPOINTMENT_UPDATE", appointment.getId());
     }
 
@@ -253,12 +268,21 @@ public class ClientServiceImpl implements ClientService {
         if (appointment.getStatus() != AppointmentStatus.PROPOSTA_REAGENDAMENTO) {
             throw new BusinessException("Não há proposta de reagendamento para rejeitar");
         }
+
+        boolean lateCancellation = cancellationPenaltyService.isLateCancellation(appointment);
+        User client = appointment.getClient();
+
         appointment.setStatus(AppointmentStatus.CANCELADO_POR_CLIENTE);
         appointment.setProposedDate(null);
         appointment.setProposedStartTime(null);
         appointment.setProposedEndTime(null);
         appointment.setBarberMessage(null);
         appointmentRepository.save(appointment);
+
+        if (lateCancellation) {
+            cancellationPenaltyService.createPenaltyForLateCancellation(client, appointment);
+        }
+
         sseService.broadcast("APPOINTMENT_UPDATE", appointment.getId());
     }
 

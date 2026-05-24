@@ -3,10 +3,15 @@ package com.americobarber.controller;
 import com.americobarber.dto.request.AppointmentRequest;
 import com.americobarber.dto.request.CancelWithObservationRequest;
 import com.americobarber.dto.request.RescheduleRequest;
+import com.americobarber.dto.request.SubmitPenaltyProofRequest;
 import com.americobarber.dto.response.AppointmentResponse;
+import com.americobarber.dto.response.CancellationPenaltyResponse;
+import com.americobarber.dto.response.PaymentSettingsResponse;
 import com.americobarber.dto.response.ServiceResponse;
 import com.americobarber.dto.response.UserResponse;
+import com.americobarber.service.CancellationPenaltyService;
 import com.americobarber.service.ClientService;
+import com.americobarber.service.PaymentSettingsService;
 import com.americobarber.util.JwtUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -33,6 +38,8 @@ import java.util.List;
 public class ClientController {
 
     private final ClientService clientService;
+    private final CancellationPenaltyService cancellationPenaltyService;
+    private final PaymentSettingsService paymentSettingsService;
     private final JwtUtil jwtUtil;
 
     @Operation(summary = "Meu perfil", description = "Retorna dados do cliente autentado (ID extraído do JWT).")
@@ -192,6 +199,32 @@ public class ClientController {
             @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam List<Long> serviceIds) {
         return ResponseEntity.ok(clientService.getAvailableTimes(barberId, date, serviceIds));
+    }
+
+    @Operation(summary = "Penalidade ativa", description = "Retorna penalidade de cancelamento tardio que bloqueia o cliente, se houver.")
+    @GetMapping("/payment-penalty/active")
+    public ResponseEntity<CancellationPenaltyResponse> getActivePenalty(HttpServletRequest request) {
+        Long clientId = getUserId(request);
+        CancellationPenaltyResponse penalty = cancellationPenaltyService.getActivePenalty(clientId);
+        if (penalty == null) {
+            return ResponseEntity.noContent().build();
+        }
+        return ResponseEntity.ok(penalty);
+    }
+
+    @Operation(summary = "Enviar comprovante", description = "Envia comprovante PIX e libera acesso imediato para agendamento.")
+    @PostMapping("/payment-penalty/proof")
+    public ResponseEntity<CancellationPenaltyResponse> submitPenaltyProof(
+            HttpServletRequest request,
+            @Valid @RequestBody SubmitPenaltyProofRequest body) {
+        Long clientId = getUserId(request);
+        return ResponseEntity.ok(cancellationPenaltyService.submitProof(clientId, body));
+    }
+
+    @Operation(summary = "Chave PIX para pagamento", description = "Retorna a chave PIX configurada pelo admin para pagamento de penalidade.")
+    @GetMapping("/payment-penalty/pix-key")
+    public ResponseEntity<PaymentSettingsResponse> getPaymentPixKey() {
+        return ResponseEntity.ok(paymentSettingsService.getSettings());
     }
 
     private Long getUserId(HttpServletRequest request) {

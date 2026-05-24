@@ -7,6 +7,7 @@ import com.americobarber.entity.User;
 import com.americobarber.exception.BusinessException;
 import com.americobarber.repository.UserRepository;
 import com.americobarber.service.AuthService;
+import com.americobarber.service.CancellationPenaltyService;
 import com.americobarber.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -26,6 +27,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final AuthenticationManager authenticationManager;
+    private final CancellationPenaltyService cancellationPenaltyService;
 
     @Override
     public LoginResponse login(LoginRequest request) {
@@ -48,6 +50,7 @@ public class AuthServiceImpl implements AuthService {
                 .profilePicture(user.getProfilePicture())
                 .description(user.getDescription())
                 .descriptionUpdatedAt(user.getDescriptionUpdatedAt())
+                .paymentBlocked(cancellationPenaltyService.isClientBlocked(user.getId()))
                 .build();
     }
 
@@ -95,6 +98,7 @@ public class AuthServiceImpl implements AuthService {
                 .profilePicture(user.getProfilePicture())
                 .description(user.getDescription())
                 .descriptionUpdatedAt(user.getDescriptionUpdatedAt())
+                .paymentBlocked(false)
                 .build();
     }
 }

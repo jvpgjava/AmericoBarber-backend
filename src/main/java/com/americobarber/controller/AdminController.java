@@ -2,13 +2,20 @@ package com.americobarber.controller;
 
 import com.americobarber.dto.request.CreateBarberRequest;
 import com.americobarber.dto.request.GalleryPhotoRequest;
+import com.americobarber.dto.request.ReviewPenaltyRequest;
 import com.americobarber.dto.request.ServiceRequest;
+import com.americobarber.dto.request.UpdatePixKeyRequest;
 import com.americobarber.dto.request.UserUpdateRequest;
 import com.americobarber.dto.response.AppointmentResponse;
+import com.americobarber.dto.response.CancellationPenaltyResponse;
 import com.americobarber.dto.response.GalleryPhotoResponse;
+import com.americobarber.dto.response.PaymentSettingsResponse;
 import com.americobarber.dto.response.ServiceResponse;
 import com.americobarber.dto.response.UserResponse;
 import com.americobarber.service.AdminService;
+import com.americobarber.service.CancellationPenaltyService;
+import com.americobarber.service.PaymentSettingsService;
+import com.americobarber.util.JwtUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -22,6 +29,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.List;
 
 @RestController
@@ -33,6 +41,9 @@ public class AdminController {
 
     private final AdminService adminService;
     private final com.americobarber.service.BarberService barberService;
+    private final CancellationPenaltyService cancellationPenaltyService;
+    private final PaymentSettingsService paymentSettingsService;
+    private final JwtUtil jwtUtil;
 
     @Operation(summary = "Obter disponibilidade de um barbeiro", description = "Retorna os horários de atendimento configurados por dia da semana para um barbeiro específico.")
     @ApiResponse(responseCode = "200", description = "Lista de disponibilidades")
@@ -165,7 +176,6 @@ public class AdminController {
         return ResponseEntity.ok(adminService.listAllAppointments());
     }
 
-    // ================= GALLERY =================
 
     @Operation(summary = "Listar fotos da galeria", description = "Retorna todas as fotos da galeria ordenadas por displayOrder.")
     @ApiResponse(responseCode = "200", description = "Lista de fotos")
@@ -206,5 +216,49 @@ public class AdminController {
             @Parameter(description = "ID da foto") @PathVariable Long id) {
         adminService.deleteGalleryPhoto(id);
         return ResponseEntity.noContent().build();
+    }
+    @Operation(summary = "Listar penalidades", description = "Lista comprovantes de cancelamento tardio enviados pelos clientes.")
+    @GetMapping("/cancellation-penalties")
+    public ResponseEntity<List<CancellationPenaltyResponse>> listCancellationPenalties() {
+        return ResponseEntity.ok(cancellationPenaltyService.listAll());
+    }
+
+    @Operation(summary = "Aprovar comprovante", description = "Confirma que o pagamento foi recebido corretamente.")
+    @PostMapping("/cancellation-penalties/{id}/approve")
+    public ResponseEntity<CancellationPenaltyResponse> approvePenalty(
+            HttpServletRequest request,
+            @PathVariable Long id,
+            @RequestBody(required = false) ReviewPenaltyRequest body) {
+        Long adminId = getUserId(request);
+        return ResponseEntity.ok(cancellationPenaltyService.approve(id, adminId, body));
+    }
+
+    @Operation(summary = "Rejeitar comprovante", description = "Bloqueia novamente o cliente por comprovante inválido.")
+    @PostMapping("/cancellation-penalties/{id}/reject")
+    public ResponseEntity<CancellationPenaltyResponse> rejectPenalty(
+            HttpServletRequest request,
+            @PathVariable Long id,
+            @RequestBody(required = false) ReviewPenaltyRequest body) {
+        Long adminId = getUserId(request);
+        return ResponseEntity.ok(cancellationPenaltyService.reject(id, adminId, body));
+    }
+
+    @Operation(summary = "Obter chave PIX", description = "Retorna a chave PIX configurada para pagamentos de penalidade.")
+    @GetMapping("/payment-settings")
+    public ResponseEntity<PaymentSettingsResponse> getPaymentSettings() {
+        return ResponseEntity.ok(paymentSettingsService.getSettings());
+    }
+
+    @Operation(summary = "Atualizar chave PIX", description = "Atualiza a chave PIX exibida aos clientes bloqueados.")
+    @PutMapping("/payment-settings")
+    public ResponseEntity<PaymentSettingsResponse> updatePaymentSettings(
+            @Valid @RequestBody UpdatePixKeyRequest body) {
+        return ResponseEntity.ok(paymentSettingsService.updatePixKey(body));
+    }
+
+    private Long getUserId(HttpServletRequest request) {
+        String auth = request.getHeader("Authorization");
+        String token = auth != null && auth.startsWith("Bearer ") ? auth.substring(7) : "";
+        return jwtUtil.getUserIdFromToken(token);
     }
 }

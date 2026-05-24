@@ -40,4 +40,6 @@ public class LoginResponse {
     private String description;
     @Schema(description = "Data da última atualização da descrição/bio")
     private java.time.Instant descriptionUpdatedAt;
+    @Schema(description = "Quando true, o cliente está bloqueado por pagamento pendente de cancelamento tardio")
+    private Boolean paymentBlocked;
 }

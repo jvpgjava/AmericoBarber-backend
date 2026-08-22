@@ -91,6 +91,12 @@ public class Appointment {
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
+    @Column(name = "confirmation_sent_at")
+    private Instant confirmationSentAt;
+
+    @Column(name = "reminder_sent_at")
+    private Instant reminderSentAt;
+
     @jakarta.persistence.PrePersist
     protected void onCreate() {
         if (createdAt == null) {

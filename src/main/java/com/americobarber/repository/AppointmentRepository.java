@@ -48,4 +48,13 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
            "(com.americobarber.enums.AppointmentStatus.AGENDADO, com.americobarber.enums.AppointmentStatus.PROPOSTA_REAGENDAMENTO) " +
            "AND (a.date < :today OR (a.date = :today AND a.endTime <= :now))")
     List<Appointment> findOverdueAppointments(@Param("today") LocalDate today, @Param("now") LocalTime now);
+
+    @Query("SELECT DISTINCT a FROM Appointment a " +
+           "JOIN FETCH a.client JOIN FETCH a.barber LEFT JOIN FETCH a.services " +
+           "WHERE a.status = :status AND a.reminderSentAt IS NULL AND a.date BETWEEN :from AND :to")
+    List<Appointment> findDueForReminder(
+            @Param("status") AppointmentStatus status,
+            @Param("from") LocalDate from,
+            @Param("to") LocalDate to
+    );
 }

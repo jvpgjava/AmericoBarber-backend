@@ -2,6 +2,7 @@ package com.americobarber.controller;
 
 import com.americobarber.dto.request.CreateBarberRequest;
 import com.americobarber.dto.request.GalleryPhotoRequest;
+import com.americobarber.dto.request.NotificationSettingsRequest;
 import com.americobarber.dto.request.ReviewPenaltyRequest;
 import com.americobarber.dto.request.ServiceRequest;
 import com.americobarber.dto.request.UpdatePixKeyRequest;
@@ -9,11 +10,13 @@ import com.americobarber.dto.request.UserUpdateRequest;
 import com.americobarber.dto.response.AppointmentResponse;
 import com.americobarber.dto.response.CancellationPenaltyResponse;
 import com.americobarber.dto.response.GalleryPhotoResponse;
+import com.americobarber.dto.response.NotificationSettingsResponse;
 import com.americobarber.dto.response.PaymentSettingsResponse;
 import com.americobarber.dto.response.ServiceResponse;
 import com.americobarber.dto.response.UserResponse;
 import com.americobarber.service.AdminService;
 import com.americobarber.service.CancellationPenaltyService;
+import com.americobarber.service.NotificationSettingsService;
 import com.americobarber.service.PaymentSettingsService;
 import com.americobarber.util.JwtUtil;
 import io.swagger.v3.oas.annotations.Operation;
@@ -43,6 +46,7 @@ public class AdminController {
     private final com.americobarber.service.BarberService barberService;
     private final CancellationPenaltyService cancellationPenaltyService;
     private final PaymentSettingsService paymentSettingsService;
+    private final NotificationSettingsService notificationSettingsService;
     private final JwtUtil jwtUtil;
 
     @Operation(summary = "Obter disponibilidade de um barbeiro", description = "Retorna os horários de atendimento configurados por dia da semana para um barbeiro específico.")
@@ -254,6 +258,19 @@ public class AdminController {
     public ResponseEntity<PaymentSettingsResponse> updatePaymentSettings(
             @Valid @RequestBody UpdatePixKeyRequest body) {
         return ResponseEntity.ok(paymentSettingsService.updatePixKey(body));
+    }
+
+    @Operation(summary = "Obter configuração de notificações", description = "Retorna a configuração atual de confirmação/lembrete por WhatsApp.")
+    @GetMapping("/notification-settings")
+    public ResponseEntity<NotificationSettingsResponse> getNotificationSettings() {
+        return ResponseEntity.ok(notificationSettingsService.getSettings());
+    }
+
+    @Operation(summary = "Atualizar configuração de notificações", description = "Atualiza se confirmação/lembrete estão habilitados e a antecedência do lembrete.")
+    @PutMapping("/notification-settings")
+    public ResponseEntity<NotificationSettingsResponse> updateNotificationSettings(
+            @Valid @RequestBody NotificationSettingsRequest body) {
+        return ResponseEntity.ok(notificationSettingsService.updateSettings(body));
     }
 
     private Long getUserId(HttpServletRequest request) {

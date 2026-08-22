@@ -24,6 +24,7 @@ import com.americobarber.repository.UserRepository;
 import com.americobarber.service.CancellationPenaltyService;
 import com.americobarber.service.ClientService;
 import com.americobarber.service.SseService;
+import com.americobarber.service.WhatsAppService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -48,6 +49,7 @@ public class ClientServiceImpl implements ClientService {
     private final AvailabilityMapper availabilityMapper;
     private final SseService sseService;
     private final CancellationPenaltyService cancellationPenaltyService;
+    private final WhatsAppService whatsAppService;
 
     @Override
     @Transactional(readOnly = true)
@@ -187,6 +189,7 @@ public class ClientServiceImpl implements ClientService {
 
         appointment = appointmentRepository.save(appointment);
         sseService.broadcast("APPOINTMENT_UPDATE", appointment.getId());
+        whatsAppService.sendAppointmentConfirmationAsync(appointment);
         return appointmentMapper.toResponse(appointment);
     }
 
